@@ -6,183 +6,200 @@
 <title>Craps Duel</title>
 <style>
   :root {
-    --felt: #0f5132;
-    --felt-dark: #0b3d26;
-    --rail: #4a2c1a;
-    --cream: #f7f2e7;
-    --gold: #e6b84c;
-    --red: #d9534f;
-    --green: #3fb97a;
-    --ink: #14161a;
-    --muted: #b9c7bf;
-    --card: rgba(0,0,0,.28);
+    --felt: #0f5132; --felt-dark: #0b3d26; --rail: #4a2c1a; --cream: #f7f2e7; --gold: #e6b84c;
+    --red: #d9534f; --green: #3fb97a; --ink: #14161a; --muted: #b9c7bf; --card: rgba(0,0,0,.28);
+    --c50: #dcdcdc; --c100: #2d6cdf; --c300: #2e9e5b; --c500: #d33a2f; --c1000: #1d1d22;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
+  html, body { margin: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%, #06261a 100%);
-    color: var(--cream);
-    min-height: 100vh;
+    color: var(--cream); min-height: 100vh;
   }
   button {
-    font: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: .7rem 1.1rem;
-    background: var(--gold); color: var(--ink); font-weight: 700; letter-spacing: .02em;
-    transition: transform .08s ease, filter .15s ease;
+    font: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: .65rem 1rem;
+    background: var(--gold); color: var(--ink); font-weight: 700; transition: transform .08s, filter .15s;
   }
   button:hover:not(:disabled) { filter: brightness(1.08); }
-  button:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+  button:active:not(:disabled) { transform: translateY(1px); }
   button:disabled { opacity: .4; cursor: not-allowed; }
   button.secondary { background: rgba(255,255,255,.12); color: var(--cream); }
   button.danger { background: var(--red); color: #fff; }
+  button.go { background: var(--green); color: #06261a; }
   input {
-    font: inherit; padding: .65rem .8rem; border-radius: 10px; border: 2px solid rgba(255,255,255,.18);
+    font: inherit; padding: .6rem .8rem; border-radius: 10px; border: 2px solid rgba(255,255,255,.18);
     background: rgba(0,0,0,.3); color: var(--cream); outline: none; width: 100%;
   }
   input:focus { border-color: var(--gold); }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing: .04em; text-transform: uppercase; color: var(--gold); }
-  .sub { color: var(--muted); margin: 0 0 1.2rem; font-size: .95rem; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 14px; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: .04em; text-transform: uppercase; color: var(--gold); }
+  .sub { color: var(--muted); margin: 0 0 1rem; font-size: .95rem; }
+  .hint { color: var(--muted); font-size: .85rem; min-height: 1.2em; }
+  code { background: rgba(0,0,0,.3); padding: 0 .3em; border-radius: 4px; }
 
-  /* ---- lobby ---- */
-  #lobby .panel {
-    background: var(--card); border-radius: 16px; padding: 20px; max-width: 420px; margin: 40px auto;
-    box-shadow: 0 10px 40px rgba(0,0,0,.35);
-  }
+  /* lobby */
+  #lobby .panel { background: var(--card); border-radius: 16px; padding: 20px; max-width: 440px; margin: 30px auto; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
   #lobby label { display: block; font-size: .85rem; color: var(--muted); margin: .9rem 0 .35rem; }
-  #lobby .row { display: flex; gap: 8px; margin-top: 1.2rem; }
-  #lobby .row button { flex: 1; }
-  .rules { font-size: .85rem; color: var(--muted); line-height: 1.5; margin-top: 1.4rem; border-top: 1px solid rgba(255,255,255,.1); padding-top: 1rem; }
+  .money { position: relative; }
+  .money::before { content: "$"; position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .money input { padding-left: 1.6rem; }
+  .rules { font-size: .85rem; color: var(--muted); line-height: 1.5; margin-top: 1.3rem; border-top: 1px solid rgba(255,255,255,.1); padding-top: 1rem; }
 
-  /* ---- table ---- */
+  /* table */
   #table { display: none; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-  .code { font-family: ui-monospace, Menlo, monospace; font-size: 1.1rem; background: rgba(0,0,0,.35); padding: .35rem .7rem; border-radius: 8px; letter-spacing: .15em; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .code { font-family: ui-monospace, Menlo, monospace; font-size: 1.05rem; background: rgba(0,0,0,.35); padding: .35rem .7rem; border-radius: 8px; letter-spacing: .15em; }
+  .badge { background: rgba(0,0,0,.35); padding: .35rem .7rem; border-radius: 8px; font-size: .85rem; color: var(--muted); }
+  .badge b { color: var(--cream); }
   .conn { font-size: .8rem; color: var(--muted); }
   .conn.off { color: var(--red); }
 
   .players { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .player {
-    background: var(--card); border-radius: 14px; padding: 14px; position: relative; border: 2px solid transparent;
-  }
+  .player { background: var(--card); border-radius: 14px; padding: 12px 14px; position: relative; border: 2px solid transparent; }
   .player.me { border-color: rgba(230,184,76,.55); }
-  .player.shooter::after {
-    content: "🎲 SHOOTER"; position: absolute; top: -10px; right: 12px; background: var(--gold); color: var(--ink);
-    font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: .08em;
-  }
-  .player .name { font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
-  .player .name .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+  .player .tag { position: absolute; top: -10px; right: 12px; background: var(--gold); color: var(--ink); font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: .08em; }
+  .player .name { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .player .name .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
   .player .name .dot.off { background: var(--red); }
-  .player .chips { font-size: 1.9rem; font-weight: 900; margin: 6px 0 2px; color: #fff; }
-  .player .chips small { font-size: .8rem; color: var(--muted); font-weight: 500; margin-left: 4px; }
-  .player .stats { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+  .player .owner { font-size: .7rem; color: var(--gold); font-weight: 600; letter-spacing: .05em; }
+  .player .bank { font-size: 1.7rem; font-weight: 900; color: #fff; margin: 4px 0 2px; }
+  .player .stats { display: flex; gap: 12px; font-size: .82rem; color: var(--muted); flex-wrap: wrap; }
   .player .stats b { color: var(--cream); }
-  .net.pos { color: var(--green) !important; }
-  .net.neg { color: var(--red) !important; }
-  .player .status { margin-top: 8px; font-size: .8rem; min-height: 1.2em; color: var(--gold); }
-  .player.empty { opacity: .55; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--muted); min-height: 150px; }
+  .net.pos { color: var(--green) !important; } .net.neg { color: var(--red) !important; }
+  .player .status { margin-top: 6px; font-size: .8rem; min-height: 1.2em; color: var(--gold); }
+  .player.empty { opacity: .55; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--muted); min-height: 190px; text-align: center; }
 
-  .felt {
-    margin-top: 14px; background: rgba(0,0,0,.18); border: 6px solid var(--rail); border-radius: 120px / 60px;
-    padding: 22px 20px; text-align: center; position: relative; min-height: 220px;
+  /* chips */
+  .rack { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .stack { position: relative; width: 52px; height: 58px; }
+  .stack .chip { position: absolute; left: 0; }
+  .stack .cnt { position: absolute; right: -4px; bottom: -2px; background: var(--ink); color: #fff; font-size: .7rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); }
+  .stack.zero { opacity: .25; }
+  .stack.clickable { cursor: pointer; }
+  .stack.clickable:hover .chip { transform: translateY(-3px); }
+  .chip {
+    width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: .78rem; color: #fff;
+    background:
+      radial-gradient(circle at center, var(--chip) 0 58%, transparent 59%),
+      repeating-conic-gradient(from 0deg, #fff 0 18deg, var(--chip) 18deg 60deg);
+    box-shadow: 0 2px 0 rgba(0,0,0,.35), inset 0 0 0 2px rgba(0,0,0,.15); transition: transform .12s;
+    text-shadow: 0 1px 1px rgba(0,0,0,.4); user-select: none;
   }
-  .banner { font-size: 1.15rem; font-weight: 700; min-height: 1.5em; }
-  .banner.win { color: var(--green); }
-  .banner.lose { color: var(--red); }
-  .dice { display: flex; justify-content: center; gap: 22px; margin: 18px 0 10px; }
-  .die {
-    width: 84px; height: 84px; background: #fff; border-radius: 16px; position: relative;
-    box-shadow: inset -4px -4px 0 rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.35);
-    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 10px; gap: 2px;
+  .chip.d50 { --chip: var(--c50); color: #333; text-shadow: none; }
+  .chip.d100 { --chip: var(--c100); }
+  .chip.d300 { --chip: var(--c300); }
+  .chip.d500 { --chip: var(--c500); }
+  .chip.d1000 { --chip: var(--c1000); }
+  .chip.sm { width: 34px; height: 34px; font-size: .6rem; }
+  .betspot { margin-top: 10px; border: 2px dashed rgba(255,255,255,.25); border-radius: 12px; padding: 8px 10px; min-height: 58px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .betspot .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; width: 100%; }
+  .betspot .amt { margin-left: auto; font-weight: 900; font-size: 1.1rem; }
+  .betspot.ready { border-color: var(--green); border-style: solid; }
+
+  /* felt */
+  .felt { margin-top: 14px; background: rgba(0,0,0,.18); border: 6px solid var(--rail); border-radius: 120px / 60px; padding: 22px 20px 18px; text-align: center; min-height: 230px; }
+  .banner { font-size: 1.1rem; font-weight: 700; min-height: 1.5em; }
+  .banner.win { color: var(--green); } .banner.lose { color: var(--red); }
+  .dice { display: flex; justify-content: center; gap: 36px; margin: 22px 0 14px; perspective: 700px; }
+  .scene { width: 76px; height: 76px; }
+  .scene.bounce { animation: bounce .9s cubic-bezier(.3,.7,.3,1); }
+  @keyframes bounce {
+    0% { transform: translateY(-70px) translateX(-30px); } 55% { transform: translateY(6px) translateX(8px); }
+    75% { transform: translateY(-10px) translateX(0); } 100% { transform: translateY(0); }
   }
-  .die.rolling { animation: tumble .55s ease-in-out; }
-  @keyframes tumble {
-    0% { transform: rotate(0) translateY(0); }
-    30% { transform: rotate(140deg) translateY(-26px) scale(1.05); }
-    60% { transform: rotate(260deg) translateY(-8px); }
-    100% { transform: rotate(360deg) translateY(0); }
+  .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.2,.75,.25,1); transform: rotateX(-20deg) rotateY(25deg); }
+  .face {
+    position: absolute; inset: 0; background: #fbfbf7; border-radius: 14px;
+    display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 9px; gap: 2px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset -3px -3px 8px rgba(0,0,0,.08);
   }
-  .pip { width: 100%; height: 100%; border-radius: 50%; background: var(--ink); visibility: hidden; }
-  .pip.on { visibility: visible; }
-  .total { font-size: 1.1rem; color: var(--muted); }
+  .face .pip { border-radius: 50%; background: var(--ink); visibility: hidden; }
+  .face .pip.on { visibility: visible; }
+  .f1 { transform: translateZ(38px); } .f6 { transform: rotateY(180deg) translateZ(38px); }
+  .f2 { transform: rotateY(90deg) translateZ(38px); } .f5 { transform: rotateY(-90deg) translateZ(38px); }
+  .f3 { transform: rotateX(90deg) translateZ(38px); } .f4 { transform: rotateX(-90deg) translateZ(38px); }
+  .total { font-size: 1rem; color: var(--muted); min-height: 1.6rem; }
   .total b { color: #fff; font-size: 1.5rem; }
-  .pucks { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-  .puck {
-    border-radius: 999px; padding: .35rem .8rem; font-weight: 800; font-size: .85rem; letter-spacing: .06em;
-    background: rgba(255,255,255,.12); color: var(--cream);
-  }
-  .puck.point { background: #fff; color: var(--ink); }
-  .puck.pot { background: var(--gold); color: var(--ink); }
+  .pucks { display: flex; justify-content: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .puck { border-radius: 999px; padding: .35rem .8rem; font-weight: 800; font-size: .85rem; letter-spacing: .06em; background: rgba(255,255,255,.12); }
+  .puck.point { background: #fff; color: var(--ink); } .puck.pot { background: var(--gold); color: var(--ink); }
   .history { margin-top: 8px; font-size: .8rem; color: var(--muted); }
 
+  /* controls */
   .controls { margin-top: 14px; background: var(--card); border-radius: 14px; padding: 14px; }
-  .stakebar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .stakebar label { color: var(--muted); font-size: .85rem; }
-  .stakebar input { width: 120px; text-align: center; font-weight: 800; font-size: 1.1rem; }
-  .chipbtns { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip {
-    width: 46px; height: 46px; border-radius: 50%; padding: 0; font-size: .75rem; font-weight: 900; color: #fff;
-    border: 4px dashed rgba(255,255,255,.75); box-shadow: 0 3px 0 rgba(0,0,0,.4);
-  }
-  .chip.c5 { background: #c0392b; } .chip.c25 { background: #27ae60; } .chip.c100 { background: #2c3e50; } .chip.c500 { background: #8e44ad; }
-  .chip.max { background: var(--gold); color: var(--ink); border-style: solid; }
-  .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-  .actions button.big { font-size: 1.15rem; padding: .9rem 1.6rem; flex: 1; min-width: 180px; }
-  .hint { color: var(--muted); font-size: .85rem; margin-top: 8px; min-height: 1.2em; }
-
-  .log { margin-top: 14px; background: rgba(0,0,0,.35); border-radius: 12px; padding: 10px 14px; max-height: 190px; overflow: auto; font-size: .85rem; line-height: 1.5; }
+  .controls h3 { margin: 0 0 8px; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .actions .big { font-size: 1.1rem; padding: .85rem 1.5rem; flex: 1; min-width: 170px; }
+  .ownerbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); font-size: .85rem; color: var(--muted); }
+  .ownerbar .money { width: 120px; }
+  .log { margin-top: 14px; background: rgba(0,0,0,.35); border-radius: 12px; padding: 10px 14px; max-height: 180px; overflow: auto; font-size: .85rem; line-height: 1.5; }
   .log div { border-bottom: 1px dashed rgba(255,255,255,.07); padding: 2px 0; }
-  .log div:last-child { border: 0; }
-  .toast {
-    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--red); color: #fff;
-    padding: .7rem 1.1rem; border-radius: 10px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.4);
-    opacity: 0; pointer-events: none; transition: opacity .2s;
-  }
+
+  /* exchange modal */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal.open { display: flex; }
+  .sheet { background: #10281c; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 18px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .sheet h2 { margin: 0 0 4px; font-size: 1.1rem; color: var(--gold); }
+  .xrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+  .xcell { background: rgba(0,0,0,.3); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .xcell .have { font-size: .7rem; color: var(--muted); }
+  .xcell .pm { display: flex; align-items: center; gap: 4px; }
+  .xcell .pm button { padding: 0; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 1rem; line-height: 1; }
+  .xcell .pm span { min-width: 20px; text-align: center; font-weight: 800; }
+  .xtotals { display: flex; justify-content: space-between; margin-top: 12px; font-weight: 700; }
+  .xtotals .bad { color: var(--red); } .xtotals .ok { color: var(--green); }
+
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--red); color: #fff; padding: .7rem 1.1rem; border-radius: 10px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; max-width: 90vw; text-align: center; }
   .toast.show { opacity: 1; }
-  @media (max-width: 640px) {
+  @media (max-width: 680px) {
     .players { grid-template-columns: 1fr; }
-    .die { width: 68px; height: 68px; }
     .felt { border-radius: 40px; }
+    .scene { width: 64px; height: 64px; }
+    .f1,.f6,.f2,.f5,.f3,.f4 { --z: 32px; }
+    .f1 { transform: translateZ(32px); } .f6 { transform: rotateY(180deg) translateZ(32px); }
+    .f2 { transform: rotateY(90deg) translateZ(32px); } .f5 { transform: rotateY(-90deg) translateZ(32px); }
+    .f3 { transform: rotateX(90deg) translateZ(32px); } .f4 { transform: rotateX(-90deg) translateZ(32px); }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- ================= LOBBY ================= -->
   <section id="lobby">
     <div class="panel">
       <h1>Craps Duel</h1>
       <p class="sub">Two players, one table. Shooter vs. fader. Winner takes the pot.</p>
       <label for="nameInput">Your name</label>
       <input id="nameInput" maxlength="20" placeholder="e.g. Kiril" autocomplete="off" />
-      <label for="roomInput">Table code <span style="opacity:.6">(leave blank to open a new table)</span></label>
+      <label for="roomInput">Table code <span style="opacity:.6">(blank = open a new table)</span></label>
       <input id="roomInput" maxlength="8" placeholder="e.g. 7XQ2" autocomplete="off" style="text-transform:uppercase;letter-spacing:.15em" />
-      <div class="row">
-        <button id="joinBtn">Sit down</button>
-      </div>
-      <div class="hint" id="lobbyStatus" style="text-align:center"></div>
+      <label for="buyInInput">Buy-in per player <span style="opacity:.6">(only used when you open a new table)</span></label>
+      <div class="money"><input id="buyInInput" type="number" min="1" step="0.5" value="50" /></div>
+      <div style="margin-top:1.2rem"><button id="joinBtn" style="width:100%">Sit down</button></div>
+      <div class="hint" id="lobbyStatus" style="text-align:center;margin-top:8px"></div>
       <div class="rules">
         <b>How it works</b><br />
-        Each round both players put up the same stake. The shooter rolls:<br />
-        • <b>7 or 11</b> on the come-out → shooter wins the pot instantly.<br />
-        • <b>2, 3 or 12</b> on the come-out → shooter craps out, other player takes the pot.<br />
-        • Anything else sets the <b>point</b>. Shooter keeps rolling: hit the point → win, roll a 7 → seven-out, lose.<br />
-        Dice pass to the other player every round. Wins and chips won are tracked for both of you.
+        The table owner sets the buy-in and the dealer hands each of you chips: 50¢, $1, $3, $5 and $10.
+        Each round both players put chips up and the bets must match before anyone rolls. Then:<br />
+        • <b>7 or 11</b> on the come-out → shooter wins the pot.<br />
+        • <b>2, 3 or 12</b> on the come-out → shooter craps out, the other player takes the pot.<br />
+        • Anything else sets the <b>point</b>. Hit it before a 7 to win.<br />
+        Dice pass to the other player every round. Swap chips with the dealer any time between rounds.
       </div>
     </div>
   </section>
 
-  <!-- ================= TABLE ================= -->
   <section id="table">
     <div class="topbar">
       <div>
-        <h1 style="font-size:1.2rem;margin:0">Craps Duel</h1>
+        <h1 style="font-size:1.15rem;margin:0">Craps Duel</h1>
         <span class="conn" id="conn">connecting…</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="badge">Buy-in <b id="buyInLabel">$50</b></span>
         <span class="code" id="codeLabel">----</span>
-        <button class="secondary" id="copyBtn" title="Copy invite link">Copy invite link</button>
+        <button class="secondary" id="copyBtn">Copy invite link</button>
         <button class="secondary" id="leaveBtn">Leave</button>
       </div>
     </div>
@@ -192,38 +209,52 @@
     <div class="felt">
       <div class="banner" id="banner"></div>
       <div class="dice">
-        <div class="die" id="die1"></div>
-        <div class="die" id="die2"></div>
+        <div class="scene" id="scene1"><div class="cube" id="cube1"></div></div>
+        <div class="scene" id="scene2"><div class="cube" id="cube2"></div></div>
       </div>
       <div class="total" id="total"></div>
       <div class="pucks" id="pucks"></div>
       <div class="history" id="history"></div>
     </div>
 
-    <div class="controls">
-      <div class="stakebar" id="stakebar">
-        <label for="stakeInput">Stake per player</label>
-        <input id="stakeInput" type="number" min="5" step="5" />
-        <div class="chipbtns">
-          <button class="chip c5" data-add="5">+5</button>
-          <button class="chip c25" data-add="25">+25</button>
-          <button class="chip c100" data-add="100">+100</button>
-          <button class="chip c500" data-add="500">+500</button>
-          <button class="chip max" data-add="max">MAX</button>
-        </div>
-        <button class="secondary" id="setStakeBtn">Set stake</button>
+    <div class="controls" id="controls">
+      <div id="betPanel">
+        <h3>Your rack — tap a chip to bet it</h3>
+        <div class="rack" id="myRack"></div>
+        <div class="betspot" id="myBet"></div>
       </div>
       <div class="actions">
-        <button class="big" id="putUpBtn">Put up chips</button>
-        <button class="big" id="rollBtn">🎲 Roll</button>
+        <button class="big" id="matchBtn">Match</button>
+        <button class="secondary" id="clearBtn">Clear bet</button>
+        <button class="big go" id="readyBtn">I'm in</button>
+        <button class="big go" id="rollBtn">🎲 Roll</button>
         <button class="big" id="nextBtn">Next round →</button>
-        <button class="big danger" id="rebuyBtn">Rebuy 1000</button>
+        <button class="secondary" id="exchangeBtn">Exchange with dealer</button>
+        <button class="danger" id="rebuyBtn">Rebuy</button>
       </div>
-      <div class="hint" id="hint"></div>
+      <div class="hint" id="hint" style="margin-top:8px"></div>
+      <div class="ownerbar" id="ownerbar">
+        <span>You own this table. Buy-in for new seats and rebuys:</span>
+        <div class="money"><input id="ownerBuyIn" type="number" min="1" step="0.5" /></div>
+        <button class="secondary" id="setBuyInBtn">Update</button>
+      </div>
     </div>
 
     <div class="log" id="log"></div>
   </section>
+</div>
+
+<div class="modal" id="xmodal">
+  <div class="sheet">
+    <h2>Exchange with the dealer</h2>
+    <div class="hint">Hand in chips from your rack and take back the same value in other chips.</div>
+    <h3 style="margin:14px 0 0;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">You give</h3>
+    <div class="xrow" id="xgive"></div>
+    <h3 style="margin:14px 0 0;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">You get</h3>
+    <div class="xrow" id="xget"></div>
+    <div class="xtotals"><span>Give: <span id="xgiveTotal">$0</span></span><span id="xstatus"></span><span>Get: <span id="xgetTotal">$0</span></span></div>
+    <div class="actions"><button class="secondary" id="xcancel">Cancel</button><button class="big go" id="xconfirm">Exchange</button></div>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -231,8 +262,14 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const lobby = $("lobby"), tableEl = $("table");
+  const DENOMS = [1000, 500, 300, 100, 50];
   let ws = null, state = null, mySeat = -1, roomCode = null, token = null, reconnectDelay = 500, wantConnected = false;
-  let lastRollKey = null;
+  let latestMsg = null, holdTimer = null, shownRollKey = null, spins = [0, 0];
+
+  const fmt = (c) => { const n = c < 0 ? "-" : "", a = Math.abs(c), d = Math.floor(a / 100), r = a % 100; return r ? `${n}$${d}.${String(r).padStart(2, "0")}` : `${n}$${d}`; };
+  const chipLabel = (d) => d === 50 ? "50¢" : "$" + d / 100;
+  const value = (s) => DENOMS.reduce((v, d) => v + d * (s[d] || 0), 0);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   // ---------- lobby ----------
   const pathRoom = location.pathname.replace(/^\//, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -245,42 +282,28 @@
     token = roomCode ? localStorage.getItem("craps:token:" + roomCode) : null;
     connect();
   };
-  $("nameInput").addEventListener("keydown", (e) => e.key === "Enter" && $("joinBtn").click());
-  $("roomInput").addEventListener("keydown", (e) => e.key === "Enter" && $("joinBtn").click());
-
-  // Auto-rejoin if we were at a table in this tab before a refresh.
+  for (const id of ["nameInput", "roomInput", "buyInInput"]) $(id).addEventListener("keydown", (e) => e.key === "Enter" && $("joinBtn").click());
   const savedRoom = sessionStorage.getItem("craps:room");
-  if (savedRoom && (!pathRoom || pathRoom === savedRoom)) {
-    roomCode = savedRoom;
-    token = localStorage.getItem("craps:token:" + roomCode);
-    connect();
-  }
+  if (savedRoom && (!pathRoom || pathRoom === savedRoom)) { roomCode = savedRoom; token = localStorage.getItem("craps:token:" + roomCode); connect(); }
 
   // ---------- networking ----------
   let connectTimer = null;
   function connect() {
     wantConnected = true;
-    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return; // already connecting/connected
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
     if (location.protocol === "file:" || !location.host) {
       lobbyStatus("This page has to be opened through the game server, not as a file. Run <code>npm start</code> and open <b>http://localhost:3000</b>.", true);
       return;
     }
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
     ws = new WebSocket(`${proto}//${location.host}`);
-    setConn("connecting…", false);
-    lobbyStatus("Connecting to the table…");
-    $("joinBtn").disabled = true;
+    setConn("connecting…", false); lobbyStatus("Connecting to the table…"); $("joinBtn").disabled = true;
     clearTimeout(connectTimer);
-    connectTimer = setTimeout(() => {
-      if (!ws || ws.readyState !== 1) {
-        lobbyStatus(`Can't reach the game server at <b>${esc(location.host)}</b>. Is <code>npm start</code> running there? If you're using a tunnel or a host like Render, make sure it allows WebSockets. Still retrying…`, true);
-      }
-    }, 5000);
+    connectTimer = setTimeout(() => { if (!ws || ws.readyState !== 1) lobbyStatus(`Can't reach the game server at <b>${esc(location.host)}</b>. Is <code>npm start</code> running there? Still retrying…`, true); }, 5000);
     ws.onopen = () => {
-      reconnectDelay = 500;
-      clearTimeout(connectTimer);
-      lobbyStatus("Connected. Sitting down…");
-      send({ type: "join", name: $("nameInput").value.trim() || localStorage.getItem("craps:name") || "Player", room: roomCode || "", token });
+      reconnectDelay = 500; clearTimeout(connectTimer); lobbyStatus("Connected. Sitting down…");
+      const buyIn = Math.round(Number($("buyInInput").value) * 100);
+      send({ type: "join", name: $("nameInput").value.trim() || localStorage.getItem("craps:name") || "Player", room: roomCode || "", token, buyIn });
     };
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
@@ -289,202 +312,254 @@
         if (msg.token) { token = msg.token; localStorage.setItem("craps:token:" + roomCode, token); }
         sessionStorage.setItem("craps:room", roomCode);
         history.replaceState(null, "", "/" + roomCode);
-        lobby.style.display = "none";
-        tableEl.style.display = "block";
-        setConn("connected", true);
-        lobbyStatus("");
-        $("joinBtn").disabled = false;
-      } else if (msg.type === "state") {
-        state = msg.table; mySeat = msg.you;
-        render(msg);
-      } else if (msg.type === "error") {
-        toast(msg.message);
-        if (lobby.style.display !== "none") lobbyStatus(msg.message, true);
-      }
+        lobby.style.display = "none"; tableEl.style.display = "block";
+        setConn("connected", true); lobbyStatus(""); $("joinBtn").disabled = false;
+      } else if (msg.type === "state") onState(msg);
+      else if (msg.type === "error") { toast(msg.message); if (lobby.style.display !== "none") lobbyStatus(msg.message, true); }
     };
     ws.onclose = () => {
       $("joinBtn").disabled = false;
       if (!wantConnected) return;
       setConn("disconnected — reconnecting…", false);
       if (lobby.style.display !== "none") lobbyStatus(`Can't reach the game server at <b>${esc(location.host)}</b>. Is <code>npm start</code> running there? Retrying…`, true);
-      setTimeout(connect, reconnectDelay);
-      reconnectDelay = Math.min(reconnectDelay * 2, 8000);
+      setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay * 2, 8000);
     };
     ws.onerror = () => ws.close();
   }
   function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
   setInterval(() => send({ type: "ping" }), 25000);
-  function lobbyStatus(html, isError) {
-    const el = $("lobbyStatus");
-    el.innerHTML = html;
-    el.style.color = isError ? "var(--red)" : "var(--muted)";
-  }
+  function lobbyStatus(html, isError) { const el = $("lobbyStatus"); el.innerHTML = html; el.style.color = isError ? "var(--red)" : "var(--muted)"; }
   function setConn(text, ok) { const c = $("conn"); c.textContent = text; c.className = "conn" + (ok ? "" : " off"); }
 
+  // Hold the UI while the dice tumble so the result lands when they do.
+  function onState(msg) {
+    latestMsg = msg;
+    const t = msg.table;
+    const key = t.lastRoll ? `${t.round}:${t.rolls.length}` : null;
+    if (key && key !== shownRollKey) {
+      shownRollKey = key;
+      animateDice(t.lastRoll.d1, t.lastRoll.d2);
+      $("banner").textContent = "Rolling…"; $("banner").className = "banner";
+      $("rollBtn").disabled = true;
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => { holdTimer = null; render(latestMsg); }, 1000);
+      return;
+    }
+    if (holdTimer) return;
+    if (!key) shownRollKey = null;
+    render(msg);
+  }
+
   // ---------- actions ----------
-  $("putUpBtn").onclick = () => send({ type: "putUp" });
+  $("matchBtn").onclick = () => send({ type: "matchBet" });
+  $("clearBtn").onclick = () => send({ type: "clearBet" });
+  $("readyBtn").onclick = () => send({ type: "ready", ready: !(state && state.players[mySeat] && state.players[mySeat].ready) });
   $("rollBtn").onclick = () => send({ type: "roll" });
   $("nextBtn").onclick = () => send({ type: "nextRound" });
-  $("rebuyBtn").onclick = () => send({ type: "rebuy", amount: 1000 });
-  $("setStakeBtn").onclick = () => send({ type: "setStake", amount: Number($("stakeInput").value) });
-  $("stakeInput").addEventListener("keydown", (e) => e.key === "Enter" && $("setStakeBtn").click());
-  document.querySelectorAll(".chip").forEach((b) => {
-    b.onclick = () => {
-      if (!state) return;
-      const cur = Number($("stakeInput").value) || 0;
-      const val = b.dataset.add === "max" ? state.maxStake : Math.min(cur + Number(b.dataset.add), state.maxStake);
-      $("stakeInput").value = val;
-      send({ type: "setStake", amount: val });
-    };
-  });
+  $("rebuyBtn").onclick = () => { if (confirm(`Buy in for another ${fmt(state.buyIn)}?`)) send({ type: "rebuy" }); };
+  $("setBuyInBtn").onclick = () => send({ type: "setBuyIn", cents: Math.round(Number($("ownerBuyIn").value) * 100) });
   $("copyBtn").onclick = async () => {
     const url = location.origin + "/" + roomCode;
-    try { await navigator.clipboard.writeText(url); toast("Invite link copied: " + url, true); }
-    catch { prompt("Share this link with your opponent:", url); }
+    try { await navigator.clipboard.writeText(url); toast("Invite link copied: " + url, true); } catch { prompt("Share this link:", url); }
   };
   $("leaveBtn").onclick = () => {
     if (!confirm("Leave the table? Your seat and chips will be given up.")) return;
-    send({ type: "leave" });
-    wantConnected = false;
-    localStorage.removeItem("craps:token:" + roomCode);
-    sessionStorage.removeItem("craps:room");
-    ws && ws.close();
-    history.replaceState(null, "", "/");
+    send({ type: "leave" }); wantConnected = false;
+    localStorage.removeItem("craps:token:" + roomCode); sessionStorage.removeItem("craps:room");
+    ws && ws.close(); history.replaceState(null, "", "/");
     tableEl.style.display = "none"; lobby.style.display = "block";
   };
   document.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && tableEl.style.display === "block" && !$("rollBtn").disabled && document.activeElement.tagName !== "INPUT") {
-      e.preventDefault(); $("rollBtn").click();
-    }
+    if (e.code === "Space" && tableEl.style.display === "block" && $("rollBtn").style.display !== "none" && !$("rollBtn").disabled && document.activeElement.tagName !== "INPUT") { e.preventDefault(); $("rollBtn").click(); }
   });
 
-  // ---------- rendering ----------
+  // ---------- exchange modal ----------
+  const xgive = {}, xget = {};
+  $("exchangeBtn").onclick = () => { for (const d of DENOMS) { xgive[d] = 0; xget[d] = 0; } renderX(); $("xmodal").classList.add("open"); };
+  $("xcancel").onclick = () => $("xmodal").classList.remove("open");
+  $("xmodal").addEventListener("click", (e) => { if (e.target === $("xmodal")) $("xmodal").classList.remove("open"); });
+  $("xconfirm").onclick = () => { send({ type: "exchange", give: xgive, receive: xget }); $("xmodal").classList.remove("open"); };
+  function renderX() {
+    const rack = state.players[mySeat].rack;
+    const row = (el, obj, limits) => {
+      el.innerHTML = "";
+      for (const d of DENOMS) {
+        const cell = document.createElement("div"); cell.className = "xcell";
+        cell.innerHTML = `${chipHtml(d, "sm")}<div class="have">${limits ? "have " + (rack[d] || 0) : "&nbsp;"}</div><div class="pm"><button data-d="${d}" data-k="-">−</button><span>${obj[d]}</span><button data-d="${d}" data-k="+">+</button></div>`;
+        cell.querySelectorAll("button").forEach((b) => b.onclick = () => {
+          const dd = Number(b.dataset.d), max = limits ? (rack[dd] || 0) : 999;
+          obj[dd] = Math.max(0, Math.min(max, obj[dd] + (b.dataset.k === "+" ? 1 : -1))); renderX();
+        });
+        el.appendChild(cell);
+      }
+    };
+    row($("xgive"), xgive, true); row($("xget"), xget, false);
+    const g = value(xgive), r = value(xget);
+    $("xgiveTotal").textContent = fmt(g); $("xgetTotal").textContent = fmt(r);
+    const ok = g > 0 && g === r;
+    $("xstatus").textContent = ok ? "✔ balanced" : g && r ? `off by ${fmt(Math.abs(g - r))}` : "";
+    $("xstatus").className = ok ? "ok" : "bad";
+    $("xconfirm").disabled = !ok;
+  }
+
+  // ---------- dice ----------
   const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-  function drawDie(el, n) {
+  const FACE_ROT = { 1: [0, 0], 6: [0, 180], 2: [0, -90], 5: [0, 90], 3: [-90, 0], 4: [90, 0] };
+  function buildCube(el) {
     el.innerHTML = "";
-    for (let i = 0; i < 9; i++) {
-      const p = document.createElement("div");
-      p.className = "pip" + (n && PIPS[n].includes(i) ? " on" : "");
-      el.appendChild(p);
+    for (let f = 1; f <= 6; f++) {
+      const face = document.createElement("div"); face.className = `face f${f}`;
+      for (let i = 0; i < 9; i++) { const p = document.createElement("div"); p.className = "pip" + (PIPS[f].includes(i) ? " on" : ""); face.appendChild(p); }
+      el.appendChild(face);
     }
   }
-  drawDie($("die1"), 0); drawDie($("die2"), 0);
+  buildCube($("cube1")); buildCube($("cube2"));
+  function showFace(i, n, animate) {
+    const cube = $("cube" + (i + 1)), scene = $("scene" + (i + 1));
+    const [rx, ry] = FACE_ROT[n];
+    if (animate) spins[i] += 2 + Math.floor(Math.random() * 2);
+    const extraX = animate ? 360 * spins[i] : 0, extraY = animate ? 360 * (spins[i] + 1) : 0;
+    cube.style.transition = animate ? "" : "none";
+    cube.style.transform = `rotateX(${rx + extraX}deg) rotateY(${ry + extraY}deg)`;
+    if (animate) { scene.classList.remove("bounce"); void scene.offsetWidth; scene.classList.add("bounce"); }
+  }
+  function animateDice(d1, d2) { showFace(0, d1, true); showFace(1, d2, true); }
+  function setDiceStill(d1, d2) { showFace(0, d1, false); showFace(1, d2, false); }
+
+  // ---------- rendering ----------
+  function chipHtml(d, extra = "") { return `<div class="chip d${d} ${extra}">${chipLabel(d)}</div>`; }
+  function stackHtml(d, n, clickable) {
+    const layers = Math.min(n, 4);
+    let chips = "";
+    for (let i = 0; i < Math.max(layers, 1); i++) chips += `<div class="chip d${d}" style="top:${(Math.max(layers, 1) - 1 - i) * 3}px">${i === Math.max(layers, 1) - 1 ? chipLabel(d) : ""}</div>`;
+    return `<div class="stack ${n ? "" : "zero"} ${clickable && n ? "clickable" : ""}" data-d="${d}">${chips}<span class="cnt">×${n}</span></div>`;
+  }
+  function rackHtml(stack, clickable) { return DENOMS.slice().reverse().map((d) => stackHtml(d, stack[d] || 0, clickable)).join(""); }
+  function betHtml(p, clickable, label) {
+    const v = value(p.bet);
+    const chips = DENOMS.slice().reverse().filter((d) => p.bet[d]).map((d) => `<div class="stack clickable-bet ${clickable ? "clickable" : ""}" data-d="${d}" style="width:40px;height:40px">${chipHtml(d, "sm")}<span class="cnt">×${p.bet[d]}</span></div>`).join("");
+    return `<span class="label">${label}</span>${chips || `<span style="color:var(--muted);font-size:.85rem">no chips up</span>`}<span class="amt">${fmt(v)}</span>`;
+  }
 
   function render(msg) {
+    state = msg.table; mySeat = msg.you;
     const t = state;
-    $("codeLabel").textContent = t.code;
+    $("codeLabel").textContent = t.code; $("buyInLabel").textContent = fmt(t.buyIn);
     const shooter = t.players[t.shooterIdx];
-    const fader = t.players[t.shooterIdx === 0 ? 1 : 0];
     const me = mySeat >= 0 ? t.players[mySeat] : null;
+    const other = mySeat >= 0 ? t.players[mySeat === 0 ? 1 : 0] : null;
     const isShooter = mySeat === t.shooterIdx;
+    const betting = t.phase === "betting";
+    const betweenRounds = ["waiting", "betting", "result"].includes(t.phase);
 
     // players
     const pl = $("players"); pl.innerHTML = "";
     for (let i = 0; i < 2; i++) {
       const p = t.players[i];
       const div = document.createElement("div");
-      if (!p) {
-        div.className = "player empty";
-        div.textContent = "Waiting for an opponent… share the invite link";
-        pl.appendChild(div); continue;
-      }
-      div.className = "player" + (i === mySeat ? " me" : "") + (i === t.shooterIdx && t.players.length === 2 ? " shooter" : "");
+      if (!p) { div.className = "player empty"; div.textContent = "Waiting for an opponent… send them the invite link"; pl.appendChild(div); continue; }
+      div.className = "player" + (i === mySeat ? " me" : "");
       const netCls = p.net > 0 ? "pos" : p.net < 0 ? "neg" : "";
       let status = "";
-      if (t.phase === "betting") status = p.putUp ? `✔ ${t.stake} in the pot` : "waiting to put up chips…";
+      if (betting) status = p.ready ? `✔ in for ${fmt(value(p.bet))}` : value(p.bet) ? `has ${fmt(value(p.bet))} up, not locked in` : "placing a bet…";
       else if (t.phase === "comeout" || t.phase === "point") status = i === t.shooterIdx ? "rolling" : "fading the shooter";
-      else if (t.phase === "result" && t.lastResult) status = i === t.lastResult.winnerIdx ? `🏆 won ${t.lastResult.amount}` : `lost ${t.lastResult.amount}`;
+      else if (t.phase === "result" && t.lastResult) status = i === t.lastResult.winnerIdx ? `🏆 won ${fmt(t.lastResult.amount)}` : `lost ${fmt(t.lastResult.amount)}`;
       div.innerHTML = `
-        <div class="name"><span class="dot ${p.connected ? "" : "off"}"></span>${esc(p.name)}${i === mySeat ? " <span style='opacity:.6;font-weight:500'>(you)</span>" : ""}</div>
-        <div class="chips">${p.chips}<small>chips</small></div>
-        <div class="stats">
-          <span>W <b>${p.wins}</b></span>
-          <span>L <b>${p.losses}</b></span>
-          <span>Net <b class="net ${netCls}">${p.net > 0 ? "+" : ""}${p.net}</b></span>
-          <span>Win% <b>${p.wins + p.losses ? Math.round(100 * p.wins / (p.wins + p.losses)) : 0}%</b></span>
-        </div>
-        <div class="status">${status}</div>`;
+        ${i === t.shooterIdx && t.players.length === 2 ? '<span class="tag">🎲 SHOOTER</span>' : ""}
+        <div class="name"><span class="dot ${p.connected ? "" : "off"}"></span>${esc(p.name)}${i === mySeat ? " <span style='opacity:.6;font-weight:500'>(you)</span>" : ""}${i === t.ownerSeat ? '<span class="owner">★ OWNER</span>' : ""}</div>
+        <div class="bank">${fmt(p.bankroll)}</div>
+        <div class="stats"><span>W <b>${p.wins}</b></span><span>L <b>${p.losses}</b></span><span>Net <b class="net ${netCls}">${p.net > 0 ? "+" : ""}${fmt(p.net)}</b></span><span>Bought in <b>${fmt(p.boughtIn)}</b></span></div>
+        <div class="status">${status}</div>
+        ${i !== mySeat ? `<div class="rack">${rackHtml(p.rack, false)}</div>` : ""}
+        <div class="betspot ${p.ready ? "ready" : ""}">${betHtml(p, false, i === mySeat ? "Your bet" : "Their bet")}</div>`;
       pl.appendChild(div);
     }
 
     // dice
     if (t.lastRoll) {
-      const key = `${t.round}:${t.rolls.length}:${t.lastRoll.d1}${t.lastRoll.d2}`;
-      const animate = key !== lastRollKey;
-      lastRollKey = key;
-      [$("die1"), $("die2")].forEach((el, i) => {
-        el.classList.remove("rolling");
-        if (animate) { void el.offsetWidth; el.classList.add("rolling"); }
-        drawDie(el, i === 0 ? t.lastRoll.d1 : t.lastRoll.d2);
-      });
+      if (!holdTimer && shownRollKey !== `${t.round}:${t.rolls.length}`) setDiceStill(t.lastRoll.d1, t.lastRoll.d2);
       $("total").innerHTML = `<b>${t.lastRoll.total}</b>`;
-    } else {
-      drawDie($("die1"), 0); drawDie($("die2"), 0);
-      $("total").textContent = "";
-      lastRollKey = null;
-    }
+    } else { $("total").textContent = ""; }
 
     // banner
     const b = $("banner"); b.className = "banner";
     if (t.phase === "waiting") b.textContent = "Waiting for a second player…";
-    else if (t.phase === "betting") b.textContent = `Round ${t.round} — ${esc(shooter.name)} shoots. Stake: ${t.stake} each.`;
-    else if (t.phase === "comeout") b.textContent = `Come-out roll — ${isShooter ? "you're" : esc(shooter.name) + " is"} shooting for ${t.pot}`;
+    else if (betting) {
+      const a = t.players[0], c = t.players[1], va = value(a.bet), vc = value(c.bet);
+      if (va && vc && va !== vc) { const low = va < vc ? a : c; b.textContent = `Bets don't match — ${esc(low.name)} needs to match ${fmt(Math.max(va, vc))}`; }
+      else b.textContent = `Round ${t.round} — ${esc(shooter.name)} has the dice. Place your bets.`;
+    }
+    else if (t.phase === "comeout") b.textContent = `Come-out roll for ${fmt(t.pot)} — ${isShooter ? "you're" : esc(shooter.name) + " is"} shooting`;
     else if (t.phase === "point") b.textContent = `Point is ${t.point} — ${isShooter ? "hit it before a 7!" : esc(shooter.name) + " needs a " + t.point + " before a 7"}`;
     else if (t.phase === "result" && t.lastResult) {
       const w = t.players[t.lastResult.winnerIdx];
-      const iWon = mySeat === t.lastResult.winnerIdx;
-      b.textContent = `${t.lastResult.reason}. ${esc(w.name)} wins ${t.lastResult.pot}!`;
-      if (mySeat >= 0) b.classList.add(iWon ? "win" : "lose");
+      b.textContent = `${t.lastResult.reason}. ${esc(w.name)} takes ${fmt(t.lastResult.pot)}!`;
+      if (mySeat >= 0) b.classList.add(mySeat === t.lastResult.winnerIdx ? "win" : "lose");
     }
 
-    // pucks
     const pk = $("pucks"); pk.innerHTML = "";
-    if (t.pot > 0) pk.innerHTML += `<span class="puck pot">POT ${t.pot}</span>`;
+    if (t.pot > 0 && (t.phase === "comeout" || t.phase === "point")) pk.innerHTML += `<span class="puck pot">POT ${fmt(t.pot)}</span>`;
     pk.innerHTML += t.point ? `<span class="puck point">ON · ${t.point}</span>` : `<span class="puck">OFF</span>`;
     $("history").textContent = t.rolls.length ? "This round: " + t.rolls.join(" · ") : "";
 
-    // controls
+    // my controls
     const seated = mySeat >= 0;
-    const betting = t.phase === "betting";
-    $("stakebar").style.display = betting && seated ? "flex" : "none";
-    if (betting && document.activeElement !== $("stakeInput")) $("stakeInput").value = t.stake;
-    $("stakeInput").max = t.maxStake;
-    $("putUpBtn").style.display = betting && seated ? "" : "none";
-    $("putUpBtn").disabled = !me || me.putUp || me.chips < t.stake;
-    $("putUpBtn").textContent = me && me.putUp ? "Chips are up ✔" : `Put up ${t.stake} chips`;
-    const canRoll = seated && isShooter && (t.phase === "comeout" || t.phase === "point");
-    $("rollBtn").style.display = (t.phase === "comeout" || t.phase === "point") ? "" : "none";
-    $("rollBtn").disabled = !canRoll;
-    $("rollBtn").textContent = canRoll ? "🎲 Roll (space)" : `🎲 ${shooter ? esc(shooter.name) : "Shooter"} is rolling…`;
-    $("nextBtn").style.display = t.phase === "result" && seated ? "" : "none";
-    const busted = me && me.chips < t.minStake && (betting || t.phase === "result" || t.phase === "waiting");
-    $("rebuyBtn").style.display = busted ? "" : "none";
+    $("controls").style.display = seated ? "" : "none";
+    if (seated) {
+      $("betPanel").style.display = "";
+      $("myRack").innerHTML = rackHtml(me.rack, betting);
+      $("myBet").className = "betspot" + (me.ready ? " ready" : "");
+      $("myBet").innerHTML = betHtml(me, betting, betting ? "Your bet — tap a chip to take it back" : "Your bet");
+      if (betting) {
+        $("myRack").querySelectorAll(".stack.clickable").forEach((s) => s.onclick = () => send({ type: "placeChip", denom: Number(s.dataset.d) }));
+        $("myBet").querySelectorAll(".clickable-bet").forEach((s) => s.onclick = () => send({ type: "removeChip", denom: Number(s.dataset.d) }));
+      }
+      const mine = value(me.bet), theirs = other ? value(other.bet) : 0;
+      $("matchBtn").style.display = betting && other && theirs > 0 && mine !== theirs ? "" : "none";
+      $("matchBtn").textContent = `Match ${fmt(theirs)}`;
+      $("clearBtn").style.display = betting && mine > 0 ? "" : "none";
+      $("readyBtn").style.display = betting ? "" : "none";
+      $("readyBtn").disabled = !me.ready && (mine === 0 || mine < theirs);
+      $("readyBtn").textContent = me.ready ? "✔ Locked in (tap to undo)" : mine && theirs && mine === theirs ? `I'm in for ${fmt(mine)}` : mine ? `Lock in ${fmt(mine)}` : "I'm in";
+      $("readyBtn").className = me.ready ? "big secondary" : "big go";
+      const rolling = t.phase === "comeout" || t.phase === "point";
+      $("rollBtn").style.display = rolling ? "" : "none";
+      $("rollBtn").disabled = !isShooter;
+      $("rollBtn").textContent = isShooter ? "🎲 Roll (space)" : `🎲 ${esc(shooter.name)} is rolling…`;
+      $("nextBtn").style.display = t.phase === "result" ? "" : "none";
+      $("exchangeBtn").style.display = betweenRounds ? "" : "none";
+      $("rebuyBtn").style.display = betweenRounds ? "" : "none";
+      $("rebuyBtn").textContent = `Rebuy ${fmt(t.buyIn)}`;
+      $("ownerbar").style.display = mySeat === t.ownerSeat && betweenRounds ? "flex" : "none";
+      if (document.activeElement !== $("ownerBuyIn")) $("ownerBuyIn").value = (t.buyIn / 100).toString();
 
-    let hint = "";
-    if (!seated) hint = `You're watching. ${msg.spectators ? "" : ""}The table is full.`;
-    else if (t.phase === "waiting") hint = "Send your opponent the invite link (button at the top).";
-    else if (betting) {
-      if (me.chips < t.minStake) hint = "You're out of chips — rebuy to keep playing.";
-      else if (!me.putUp) hint = isShooter ? "You're the shooter this round. Agree on a stake and put up your chips." : "You're fading the shooter this round. Put up your chips to match.";
-      else hint = `Waiting for ${esc(fader === me ? shooter.name : fader.name)} to put up chips…`;
+      let hint = "";
+      if (t.phase === "waiting") hint = "Send your opponent the invite link. You can change the buy-in below until they sit down.";
+      else if (betting) {
+        if (me.bankroll < 50) hint = "You're out of chips — rebuy to keep playing.";
+        else if (me.ready) hint = theirs === mine ? `Waiting for ${esc(other.name)} to lock in…` : `Waiting for ${esc(other.name)} to match ${fmt(mine)}…`;
+        else if (mine === 0) hint = isShooter ? "You're the shooter. Tap chips in your rack to put them up." : "You're fading the shooter. Tap chips in your rack to put them up.";
+        else if (mine < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up. Add ${fmt(theirs - mine)} more or tap Match.`;
+        else if (mine > theirs && theirs > 0) hint = `${esc(other.name)} needs to match your ${fmt(mine)}. Lock in when you're happy with your bet.`;
+        else hint = "Lock in when you're happy with your bet.";
+      }
+      else if (t.phase === "comeout") hint = isShooter ? "7 or 11 wins now. 2, 3 or 12 loses now. Anything else sets your point." : "If they roll 7 or 11 you lose; 2, 3 or 12 and the pot is yours.";
+      else if (t.phase === "point") hint = isShooter ? `Roll a ${t.point} to win. A 7 loses.` : `You win if a 7 comes before another ${t.point}.`;
+      else if (t.phase === "result") hint = "Either player can start the next round. The dice pass to the other player.";
+      $("hint").innerHTML = hint;
+      if ($("xmodal").classList.contains("open")) renderX();
     }
-    else if (t.phase === "comeout") hint = isShooter ? "7 or 11 wins now. 2, 3 or 12 loses now. Anything else sets your point." : "If they hit 7 or 11 you lose; 2, 3 or 12 and you win the pot.";
-    else if (t.phase === "point") hint = isShooter ? `Roll a ${t.point} to win. A 7 loses.` : `You win if a 7 comes before another ${t.point}.`;
-    else if (t.phase === "result") hint = "Either player can start the next round. The dice pass to the other player.";
-    $("hint").innerHTML = hint;
 
-    // log
     const lg = $("log");
     const atBottom = lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 10;
     lg.innerHTML = t.log.map((l) => `<div>${esc(l.text)}</div>`).join("");
     if (atBottom) lg.scrollTop = lg.scrollHeight;
   }
 
-  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
   let toastTimer;
   function toast(text, ok) {
     const el = $("toast"); el.textContent = text; el.style.background = ok ? "var(--green)" : "var(--red)";
-    el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+    el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
   }
 })();
 </script>

@@ -4,7 +4,9 @@ A two-player online craps table. Each of you opens the same link from your own c
 
 ## Rules
 
-Each round both players put up the **same stake** (you pick the amount, from 5 chips up to the smaller stack at the table). Then the shooter rolls:
+The person who opens the table is the **owner** and sets the buy-in (default $50). The dealer hands each player that amount in chips: **50¢, $1, $3, $5 and $10**. You can swap chips with the dealer any time between rounds, and rebuy for another buy-in if you run dry.
+
+Each round both players tap chips from their rack into their bet spot. **The bets have to match before the round can start**: if one player puts up $1 and the other $3, the first has to add $2 (or tap *Match*) before anyone can lock in. Once both players lock in at the same amount, the shooter rolls:
 
 | Come-out roll | Result |
 | --- | --- |
@@ -14,7 +16,7 @@ Each round both players put up the **same stake** (you pick the amount, from 5 c
 
 With a point set, the shooter keeps rolling. Hitting the point wins; rolling a 7 first ("seven-out") loses. Every other number does nothing.
 
-After each round the dice pass to the other player. Everyone starts with 1000 chips and can rebuy 1000 if they bust.
+The winner takes every chip on the table. After each round the dice pass to the other player. Wins, losses and net dollars are tracked for both players.
 
 ## Run it
 
@@ -23,7 +25,7 @@ npm install
 npm start          # http://localhost:3000
 ```
 
-Open the page, enter a name, leave the table code blank, and click **Sit down**. Click **Copy invite link** and send it to your opponent. When they open it and sit down, the first round starts.
+Open the page, enter a name, pick a buy-in, leave the table code blank, and click **Sit down**. Click **Copy invite link** and send it to your opponent. When they open it and sit down, the first round starts.
 
 ## Playing from two different computers
 
@@ -55,7 +57,7 @@ Send the https URL the tunnel prints. WebSockets work through all of these.
 | Env var | Default | Meaning |
 | --- | --- | --- |
 | `PORT` | 3000 | HTTP + WebSocket port |
-| `STARTING_CHIPS` | 1000 | Chips each player sits down with |
+| `DEFAULT_BUY_IN` | 5000 | Default buy-in in cents for new tables ($50) |
 
 ## Notes
 

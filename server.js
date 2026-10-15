@@ -10,7 +10,7 @@ import * as G from "./lib/game.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
 const PORT = Number(process.env.PORT) || 3000;
-const STARTING_CHIPS = Number(process.env.STARTING_CHIPS) || G.STARTING_CHIPS;
+const DEFAULT_BUY_IN = Number(process.env.DEFAULT_BUY_IN) || G.DEFAULT_BUY_IN;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -68,6 +68,7 @@ function getRoom(code) {
   let room = tables.get(code);
   if (!room) {
     room = { table: G.newTable(code), sockets: new Set(), tokens: new Map() };
+    room.table.buyIn = DEFAULT_BUY_IN;
     tables.set(code, room);
   }
   if (room.cleanup) {
@@ -98,11 +99,11 @@ function publicState(room, ws) {
     table: {
       code: t.code,
       phase: t.phase,
+      ownerSeat: t.players.findIndex((p) => p.id === t.ownerId),
+      buyIn: t.buyIn,
+      denoms: G.DENOMS,
       shooterIdx: t.shooterIdx,
-      stake: t.stake,
-      minStake: G.MIN_STAKE,
-      maxStake: G.maxStake(t),
-      pot: t.pot,
+      pot: G.potValue(t),
       point: t.point,
       lastRoll: t.lastRoll,
       rolls: t.rolls,
@@ -111,11 +112,14 @@ function publicState(room, ws) {
       log: t.log.slice(-25),
       players: t.players.map((p) => ({
         name: p.name,
-        chips: p.chips,
+        rack: p.rack,
+        bet: p.bet,
+        bankroll: G.stackValue(p.rack) + G.stackValue(p.bet),
+        ready: p.ready,
         wins: p.wins,
         losses: p.losses,
         net: p.net,
-        putUp: p.putUp,
+        boughtIn: p.boughtIn,
         connected: p.connected,
       })),
     },
@@ -194,7 +198,14 @@ function handle(ws, msg) {
       room.tokens.set(newToken, playerId);
       ws.playerId = playerId;
       ws.token = newToken;
-      G.seatPlayer(room.table, G.newPlayer(playerId, name, STARTING_CHIPS));
+      // The person opening a table picks its buy-in.
+      if (room.table.ownerId === null && msg.buyIn != null) {
+        const cents = Math.round(Number(msg.buyIn));
+        if (Number.isFinite(cents) && cents >= G.MIN_BUY_IN && cents <= G.MAX_BUY_IN && cents % 50 === 0) {
+          room.table.buyIn = cents;
+        }
+      }
+      G.seatPlayer(room.table, G.newPlayer(playerId, name, room.table.buyIn));
     } else {
       ws.playerId = null; // spectator
     }
@@ -208,13 +219,33 @@ function handle(ws, msg) {
   const t = room.table;
 
   switch (msg.type) {
-    case "setStake":
+    case "setBuyIn":
       requireSeat(seat);
-      G.setStake(t, seat, msg.amount);
+      G.setBuyIn(t, seat, msg.cents);
       break;
-    case "putUp":
+    case "placeChip":
       requireSeat(seat);
-      G.putUp(t, seat);
+      G.placeChip(t, seat, msg.denom);
+      break;
+    case "removeChip":
+      requireSeat(seat);
+      G.removeChip(t, seat, msg.denom);
+      break;
+    case "clearBet":
+      requireSeat(seat);
+      G.clearBet(t, seat);
+      break;
+    case "matchBet":
+      requireSeat(seat);
+      G.matchBet(t, seat);
+      break;
+    case "ready":
+      requireSeat(seat);
+      G.setReady(t, seat, msg.ready !== false);
+      break;
+    case "exchange":
+      requireSeat(seat);
+      G.exchange(t, seat, msg.give, msg.receive);
       break;
     case "roll":
       requireSeat(seat);
@@ -226,7 +257,7 @@ function handle(ws, msg) {
       break;
     case "rebuy":
       requireSeat(seat);
-      G.rebuy(t, seat, msg.amount ?? STARTING_CHIPS);
+      G.rebuy(t, seat);
       break;
     case "leave":
       if (seat >= 0) {
