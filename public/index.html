@@ -103,31 +103,31 @@
   .felt { margin-top: 12px; background: rgba(0,0,0,.18); border: 6px solid var(--rail); border-radius: 120px / 60px; padding: 22px 20px 18px; text-align: center; min-height: 230px; }
   .banner { font-size: 1.1rem; font-weight: 700; min-height: 1.5em; }
   .banner.win { color: var(--green); } .banner.lose { color: var(--red); }
-  .dice { display: flex; justify-content: center; gap: 36px; margin: 22px 0 14px; perspective: 700px; }
-  .scene { width: 76px; height: 76px; --h: 38px; transform-style: preserve-3d; will-change: transform; transform: translateZ(0); }
+  .dice { display: flex; justify-content: center; gap: 36px; margin: 22px 0 14px; }
+  .scene { width: 76px; height: 76px; --h: 38px; perspective: 520px; perspective-origin: 50% 40%; }
   .scene.bounce { animation: bounce .9s cubic-bezier(.3,.7,.3,1); }
   @keyframes bounce {
-    0% { transform: translateY(-70px) translateX(-30px) translateZ(0); } 55% { transform: translateY(6px) translateX(8px) translateZ(0); }
-    75% { transform: translateY(-10px) translateX(0) translateZ(0); } 100% { transform: translateY(0) translateZ(0); }
+    0% { transform: translateY(-70px) translateX(-30px); } 55% { transform: translateY(6px) translateX(8px); }
+    75% { transform: translateY(-10px) translateX(0); } 100% { transform: translateY(0); }
   }
-  .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.2,.75,.25,1); transform: rotateX(-14deg) rotateY(18deg); }
+  .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.2,.75,.25,1); transform: rotateX(-10deg) rotateY(12deg); }
   .face, .core {
     position: absolute; inset: 0; background: #fbfbf7; backface-visibility: hidden; -webkit-backface-visibility: hidden;
   }
   .face {
-    border-radius: 16px; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 9px; gap: 2px;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.07), inset -3px -3px 8px rgba(0,0,0,.08);
+    border-radius: 7px; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 10px; gap: 2px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), inset 0 0 10px rgba(0,0,0,.06), inset -2px -2px 6px rgba(0,0,0,.07);
   }
-  /* A solid inner block so the cube's rounded corners aren't see-through. */
-  .core { inset: 7px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.05); }
+  /* A solid inner block so the corners never show through. */
+  .core { top: 3px; left: 3px; right: 3px; bottom: 3px; border-radius: 3px; }
   .face .pip { width: 76%; height: 76%; place-self: center; border-radius: 50%; background: var(--ink); visibility: hidden; }
   .face .pip.on { visibility: visible; }
   .f1 { transform: translateZ(var(--h)); } .f6 { transform: rotateY(180deg) translateZ(var(--h)); }
   .f2 { transform: rotateY(90deg) translateZ(var(--h)); } .f5 { transform: rotateY(-90deg) translateZ(var(--h)); }
   .f3 { transform: rotateX(90deg) translateZ(var(--h)); } .f4 { transform: rotateX(-90deg) translateZ(var(--h)); }
-  .c1 { transform: translateZ(calc(var(--h) - 4px)); } .c6 { transform: rotateY(180deg) translateZ(calc(var(--h) - 4px)); }
-  .c2 { transform: rotateY(90deg) translateZ(calc(var(--h) - 4px)); } .c5 { transform: rotateY(-90deg) translateZ(calc(var(--h) - 4px)); }
-  .c3 { transform: rotateX(90deg) translateZ(calc(var(--h) - 4px)); } .c4 { transform: rotateX(-90deg) translateZ(calc(var(--h) - 4px)); }
+  .c1 { transform: translateZ(calc(var(--h) - 2px)); } .c6 { transform: rotateY(180deg) translateZ(calc(var(--h) - 2px)); }
+  .c2 { transform: rotateY(90deg) translateZ(calc(var(--h) - 2px)); } .c5 { transform: rotateY(-90deg) translateZ(calc(var(--h) - 2px)); }
+  .c3 { transform: rotateX(90deg) translateZ(calc(var(--h) - 2px)); } .c4 { transform: rotateX(-90deg) translateZ(calc(var(--h) - 2px)); }
   .total { font-size: 1rem; color: var(--muted); min-height: 1.6rem; }
   .total b { color: #fff; font-size: 1.5rem; }
   .pucks { display: flex; justify-content: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
@@ -434,8 +434,8 @@
     const extraX = animate ? 360 * spins[i] : 0, extraY = animate ? 360 * (spins[i] + 1) : 0;
     cube.style.transition = animate ? "" : "none";
     // Rest at a slight tilt (mirrored per die) so the dice read as solid 3D and no face sits edge-on.
-    const tiltY = i === 0 ? 18 : -18;
-    cube.style.transform = `rotateX(-14deg) rotateY(${tiltY}deg) rotateX(${rx + extraX}deg) rotateY(${ry + extraY}deg)`;
+    const tiltY = i === 0 ? 12 : -12;
+    cube.style.transform = `rotateX(-10deg) rotateY(${tiltY}deg) rotateX(${rx + extraX}deg) rotateY(${ry + extraY}deg)`;
     if (animate) { scene.classList.remove("bounce"); void scene.offsetWidth; scene.classList.add("bounce"); }
   }
   function animateDice(d1, d2) { showFace(0, d1, true); showFace(1, d2, true); }
