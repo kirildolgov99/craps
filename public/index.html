@@ -161,6 +161,7 @@
       <div class="row">
         <button id="joinBtn">Sit down</button>
       </div>
+      <div class="hint" id="lobbyStatus" style="text-align:center"></div>
       <div class="rules">
         <b>How it works</b><br />
         Each round both players put up the same stake. The shooter rolls:<br />
@@ -256,13 +257,29 @@
   }
 
   // ---------- networking ----------
+  let connectTimer = null;
   function connect() {
     wantConnected = true;
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return; // already connecting/connected
+    if (location.protocol === "file:" || !location.host) {
+      lobbyStatus("This page has to be opened through the game server, not as a file. Run <code>npm start</code> and open <b>http://localhost:3000</b>.", true);
+      return;
+    }
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
     ws = new WebSocket(`${proto}//${location.host}`);
     setConn("connecting…", false);
+    lobbyStatus("Connecting to the table…");
+    $("joinBtn").disabled = true;
+    clearTimeout(connectTimer);
+    connectTimer = setTimeout(() => {
+      if (!ws || ws.readyState !== 1) {
+        lobbyStatus(`Can't reach the game server at <b>${esc(location.host)}</b>. Is <code>npm start</code> running there? If you're using a tunnel or a host like Render, make sure it allows WebSockets. Still retrying…`, true);
+      }
+    }, 5000);
     ws.onopen = () => {
       reconnectDelay = 500;
+      clearTimeout(connectTimer);
+      lobbyStatus("Connected. Sitting down…");
       send({ type: "join", name: $("nameInput").value.trim() || localStorage.getItem("craps:name") || "Player", room: roomCode || "", token });
     };
     ws.onmessage = (ev) => {
@@ -275,16 +292,21 @@
         lobby.style.display = "none";
         tableEl.style.display = "block";
         setConn("connected", true);
+        lobbyStatus("");
+        $("joinBtn").disabled = false;
       } else if (msg.type === "state") {
         state = msg.table; mySeat = msg.you;
         render(msg);
       } else if (msg.type === "error") {
         toast(msg.message);
+        if (lobby.style.display !== "none") lobbyStatus(msg.message, true);
       }
     };
     ws.onclose = () => {
+      $("joinBtn").disabled = false;
       if (!wantConnected) return;
       setConn("disconnected — reconnecting…", false);
+      if (lobby.style.display !== "none") lobbyStatus(`Can't reach the game server at <b>${esc(location.host)}</b>. Is <code>npm start</code> running there? Retrying…`, true);
       setTimeout(connect, reconnectDelay);
       reconnectDelay = Math.min(reconnectDelay * 2, 8000);
     };
@@ -292,6 +314,11 @@
   }
   function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
   setInterval(() => send({ type: "ping" }), 25000);
+  function lobbyStatus(html, isError) {
+    const el = $("lobbyStatus");
+    el.innerHTML = html;
+    el.style.color = isError ? "var(--red)" : "var(--muted)";
+  }
   function setConn(text, ok) { const c = $("conn"); c.textContent = text; c.className = "conn" + (ok ? "" : " off"); }
 
   // ---------- actions ----------
