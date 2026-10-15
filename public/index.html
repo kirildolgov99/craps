@@ -111,23 +111,16 @@
     75% { transform: translateY(-10px) translateX(0); } 100% { transform: translateY(0); }
   }
   .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.2,.75,.25,1); transform: rotateX(-10deg) rotateY(12deg); }
-  .face, .core {
-    position: absolute; inset: 0; background: #fbfbf7; backface-visibility: hidden; -webkit-backface-visibility: hidden;
-  }
   .face {
-    border-radius: 7px; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 10px; gap: 2px;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), inset 0 0 10px rgba(0,0,0,.06), inset -2px -2px 6px rgba(0,0,0,.07);
+    position: absolute; inset: 0; background: #fbfbf7; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 10px; gap: 2px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset 0 0 12px rgba(0,0,0,.06), inset -3px -3px 8px rgba(0,0,0,.08);
   }
-  /* A solid inner block so the corners never show through. */
-  .core { top: 3px; left: 3px; right: 3px; bottom: 3px; border-radius: 3px; }
   .face .pip { width: 76%; height: 76%; place-self: center; border-radius: 50%; background: var(--ink); visibility: hidden; }
   .face .pip.on { visibility: visible; }
   .f1 { transform: translateZ(var(--h)); } .f6 { transform: rotateY(180deg) translateZ(var(--h)); }
   .f2 { transform: rotateY(90deg) translateZ(var(--h)); } .f5 { transform: rotateY(-90deg) translateZ(var(--h)); }
   .f3 { transform: rotateX(90deg) translateZ(var(--h)); } .f4 { transform: rotateX(-90deg) translateZ(var(--h)); }
-  .c1 { transform: translateZ(calc(var(--h) - 2px)); } .c6 { transform: rotateY(180deg) translateZ(calc(var(--h) - 2px)); }
-  .c2 { transform: rotateY(90deg) translateZ(calc(var(--h) - 2px)); } .c5 { transform: rotateY(-90deg) translateZ(calc(var(--h) - 2px)); }
-  .c3 { transform: rotateX(90deg) translateZ(calc(var(--h) - 2px)); } .c4 { transform: rotateX(-90deg) translateZ(calc(var(--h) - 2px)); }
   .total { font-size: 1rem; color: var(--muted); min-height: 1.6rem; }
   .total b { color: #fff; font-size: 1.5rem; }
   .pucks { display: flex; justify-content: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
@@ -419,7 +412,6 @@
   const FACE_ROT = { 1: [0, 0], 6: [0, 180], 2: [0, -90], 5: [0, 90], 3: [-90, 0], 4: [90, 0] };
   function buildCube(el) {
     el.innerHTML = "";
-    for (let f = 1; f <= 6; f++) { const c = document.createElement("div"); c.className = `core c${f}`; el.appendChild(c); }
     for (let f = 1; f <= 6; f++) {
       const face = document.createElement("div"); face.className = `face f${f}`;
       for (let i = 0; i < 9; i++) { const p = document.createElement("div"); p.className = "pip" + (PIPS[f].includes(i) ? " on" : ""); face.appendChild(p); }
