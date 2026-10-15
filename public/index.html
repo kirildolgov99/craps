@@ -426,7 +426,7 @@
     const extraX = animate ? 360 * spins[i] : 0, extraY = animate ? 360 * (spins[i] + 1) : 0;
     cube.style.transition = animate ? "" : "none";
     // Rest at a slight tilt (mirrored per die) so the dice read as solid 3D and no face sits edge-on.
-    const tiltY = i === 0 ? 12 : -12;
+    const tiltY = 12;
     cube.style.transform = `rotateX(-10deg) rotateY(${tiltY}deg) rotateX(${rx + extraX}deg) rotateY(${ry + extraY}deg)`;
     if (animate) { scene.classList.remove("bounce"); void scene.offsetWidth; scene.classList.add("bounce"); }
   }
@@ -463,7 +463,7 @@
     const topIdx = mySeat >= 0 ? (mySeat === 0 ? 1 : 0) : 1;
     const bottomIdx = mySeat >= 0 ? mySeat : 0;
     const statusOf = (p, i) => {
-      if (betting) return p.ready ? `✔ in for ${fmt(value(p.bet))}` : value(p.bet) ? `has ${fmt(value(p.bet))} up, not locked in` : "placing a bet…";
+      if (betting) return p.ready ? `✔ in for ${fmt(value(p.bet))}` : value(p.bet) ? `has ${fmt(value(p.bet))} up, not in yet` : "placing a bet…";
       if (t.phase === "comeout" || t.phase === "point") return i === t.shooterIdx ? "rolling" : "fading the shooter";
       if (t.phase === "result" && t.lastResult) return i === t.lastResult.winnerIdx ? `🏆 won ${fmt(t.lastResult.amount)}` : `lost ${fmt(t.lastResult.amount)}`;
       return "";
@@ -506,7 +506,7 @@
     if (t.phase === "waiting") b.textContent = "Waiting for a second player…";
     else if (betting) {
       const a = t.players[0], c = t.players[1], va = value(a.bet), vc = value(c.bet);
-      if (va && vc && va !== vc) { const low = va < vc ? a : c; b.textContent = `Bets don't match — ${esc(low.name)} needs to match ${fmt(Math.max(va, vc))}`; }
+      if (va && vc && va !== vc) { const low = va < vc ? a : c; b.textContent = `${a.ready && c.ready ? "Both in but bets don't match" : "Bets don't match"} — ${esc(low.name)} needs to match ${fmt(Math.max(va, vc))}`; }
       else b.textContent = `Round ${t.round} — ${esc(shooter.name)} has the dice. Place your bets.`;
     }
     else if (t.phase === "comeout") b.textContent = `Come-out roll for ${fmt(t.pot)} — ${isShooter ? "you're" : esc(shooter.name) + " is"} shooting`;
@@ -545,8 +545,8 @@
       $("matchBtn").textContent = `Match ${fmt(theirs)}`;
       $("clearBtn").style.display = betting && mine > 0 ? "" : "none";
       $("readyBtn").style.display = betting ? "" : "none";
-      $("readyBtn").disabled = !me.ready && (mine === 0 || mine < theirs);
-      $("readyBtn").textContent = me.ready ? "✔ Locked in (tap to undo)" : mine && theirs && mine === theirs ? `I'm in for ${fmt(mine)}` : mine ? `Lock in ${fmt(mine)}` : "I'm in";
+      $("readyBtn").disabled = !me.ready && mine === 0;
+      $("readyBtn").textContent = me.ready ? `✔ In for ${fmt(mine)} (tap to undo)` : mine ? `I'm in for ${fmt(mine)}` : "I'm in";
       $("readyBtn").className = me.ready ? "big secondary" : "big go";
       const rolling = t.phase === "comeout" || t.phase === "point";
       $("rollBtn").style.display = rolling ? "" : "none";
@@ -563,11 +563,11 @@
       if (t.phase === "waiting") hint = "Send your opponent the invite link. You can change the buy-in below until they sit down.";
       else if (betting) {
         if (me.bankroll < 50) hint = "You're out of chips — rebuy to keep playing.";
-        else if (me.ready) hint = theirs === mine ? `Waiting for ${esc(other.name)} to lock in…` : `Waiting for ${esc(other.name)} to match ${fmt(mine)}…`;
-        else if (mine === 0) hint = isShooter ? "You're the shooter. Tap chips in your rack to put them up." : "You're fading the shooter. Tap chips in your rack to put them up.";
-        else if (mine < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up. Add ${fmt(theirs - mine)} more or tap Match.`;
-        else if (mine > theirs && theirs > 0) hint = `${esc(other.name)} needs to match your ${fmt(mine)}. Lock in when you're happy with your bet.`;
-        else hint = "Lock in when you're happy with your bet.";
+        else if (me.ready && mine < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up. Tap Match to go live at ${fmt(theirs)}.`;
+        else if (me.ready) hint = theirs === mine ? `Waiting for ${esc(other.name)} to say they're in…` : `Waiting for ${esc(other.name)} to match ${fmt(mine)}…`;
+        else if (mine === 0) hint = isShooter ? "You're the shooter. Tap chips in your rack to put them up, then I'm in." : "You're fading the shooter. Tap chips in your rack to put them up, then I'm in.";
+        else if (mine < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up. Tap Match, or add ${fmt(theirs - mine)} and say I'm in.`;
+        else hint = "Tap I'm in when you're happy with your bet. The round goes live when you both are in at the same amount.";
       }
       else if (t.phase === "comeout") hint = isShooter ? "7 or 11 wins now. 2, 3 or 12 loses now. Anything else sets your point." : "If they roll 7 or 11 you lose; 2, 3 or 12 and the pot is yours.";
       else if (t.phase === "point") hint = isShooter ? `Roll a ${t.point} to win. A 7 loses.` : `You win if a 7 comes before another ${t.point}.`;

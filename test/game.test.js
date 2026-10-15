@@ -89,31 +89,34 @@ test("placing and removing chips moves them between rack and bet", () => {
   assert.throws(() => G.removeChip(t, 0, 1000), /isn't in your bet/);
 });
 
-test("round can't start until both bets match", () => {
+test("round can't start until both are in with matching bets", () => {
   const t = seated();
   bet(t, 0, [100]);          // Alice $1
   bet(t, 1, [300]);          // Bob $3
   G.setReady(t, 1);          // Bob is in at $3
-  assert.throws(() => G.setReady(t, 0), /match \$3/);
+  G.setReady(t, 0);          // Alice can say she's in at $1, but nothing starts
   assert.equal(t.phase, G.PHASES.BETTING);
+  assert.equal(t.players[0].ready, true);
   G.placeChip(t, 0, 100);
-  G.placeChip(t, 0, 100);    // Alice now $3; the change reset Bob's ready
-  assert.equal(t.players[1].ready, false);
-  G.setReady(t, 0);
-  assert.equal(t.phase, G.PHASES.BETTING);
-  G.setReady(t, 1);
+  G.placeChip(t, 0, 100);    // Alice adds chips: only her own lock resets
+  assert.equal(t.players[0].ready, false);
+  assert.equal(t.players[1].ready, true);
+  G.setReady(t, 0);          // Alice back in at $3 -> live
   assert.equal(t.phase, G.PHASES.COMEOUT);
   assert.equal(G.potValue(t), 600);
 });
 
-test("ready requires a bet; the higher bettor may lock in first", () => {
+test("ready requires a bet; Match counts as I'm in and starts the round", () => {
   const t = seated();
   assert.throws(() => G.setReady(t, 0), /chips up first/);
   bet(t, 0, [500]);
-  G.setReady(t, 0);                     // $5 vs $0 is fine, Bob must match
-  assert.equal(t.players[0].ready, true);
+  G.setReady(t, 0);                     // Alice in at $5
   bet(t, 1, [300]);
-  assert.throws(() => G.setReady(t, 1), /match \$5/);
+  G.setReady(t, 1);                     // Bob in at $3, still betting
+  assert.equal(t.phase, G.PHASES.BETTING);
+  G.matchBet(t, 1);                     // Bob matches -> live immediately
+  assert.equal(t.players[1].ready, true);
+  assert.equal(t.phase, G.PHASES.COMEOUT);
 });
 
 test("matchBet picks exact chips, or has the dealer make change", () => {
