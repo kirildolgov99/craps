@@ -1,0 +1,19 @@
+{
+  "name": "craps-duel",
+  "version": "1.0.0",
+  "description": "Two-player online craps: shooter vs. fader, chips, turns, and stats over WebSockets.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

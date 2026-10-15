@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Craps Duel</title>
+<style>
+  :root {
+    --felt: #0f5132;
+    --felt-dark: #0b3d26;
+    --rail: #4a2c1a;
+    --cream: #f7f2e7;
+    --gold: #e6b84c;
+    --red: #d9534f;
+    --green: #3fb97a;
+    --ink: #14161a;
+    --muted: #b9c7bf;
+    --card: rgba(0,0,0,.28);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%, #06261a 100%);
+    color: var(--cream);
+    min-height: 100vh;
+  }
+  button {
+    font: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: .7rem 1.1rem;
+    background: var(--gold); color: var(--ink); font-weight: 700; letter-spacing: .02em;
+    transition: transform .08s ease, filter .15s ease;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.secondary { background: rgba(255,255,255,.12); color: var(--cream); }
+  button.danger { background: var(--red); color: #fff; }
+  input {
+    font: inherit; padding: .65rem .8rem; border-radius: 10px; border: 2px solid rgba(255,255,255,.18);
+    background: rgba(0,0,0,.3); color: var(--cream); outline: none; width: 100%;
+  }
+  input:focus { border-color: var(--gold); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing: .04em; text-transform: uppercase; color: var(--gold); }
+  .sub { color: var(--muted); margin: 0 0 1.2rem; font-size: .95rem; }
+
+  /* ---- lobby ---- */
+  #lobby .panel {
+    background: var(--card); border-radius: 16px; padding: 20px; max-width: 420px; margin: 40px auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  #lobby label { display: block; font-size: .85rem; color: var(--muted); margin: .9rem 0 .35rem; }
+  #lobby .row { display: flex; gap: 8px; margin-top: 1.2rem; }
+  #lobby .row button { flex: 1; }
+  .rules { font-size: .85rem; color: var(--muted); line-height: 1.5; margin-top: 1.4rem; border-top: 1px solid rgba(255,255,255,.1); padding-top: 1rem; }
+
+  /* ---- table ---- */
+  #table { display: none; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .code { font-family: ui-monospace, Menlo, monospace; font-size: 1.1rem; background: rgba(0,0,0,.35); padding: .35rem .7rem; border-radius: 8px; letter-spacing: .15em; }
+  .conn { font-size: .8rem; color: var(--muted); }
+  .conn.off { color: var(--red); }
+
+  .players { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .player {
+    background: var(--card); border-radius: 14px; padding: 14px; position: relative; border: 2px solid transparent;
+  }
+  .player.me { border-color: rgba(230,184,76,.55); }
+  .player.shooter::after {
+    content: "🎲 SHOOTER"; position: absolute; top: -10px; right: 12px; background: var(--gold); color: var(--ink);
+    font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: .08em;
+  }
+  .player .name { font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+  .player .name .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+  .player .name .dot.off { background: var(--red); }
+  .player .chips { font-size: 1.9rem; font-weight: 900; margin: 6px 0 2px; color: #fff; }
+  .player .chips small { font-size: .8rem; color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .player .stats { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+  .player .stats b { color: var(--cream); }
+  .net.pos { color: var(--green) !important; }
+  .net.neg { color: var(--red) !important; }
+  .player .status { margin-top: 8px; font-size: .8rem; min-height: 1.2em; color: var(--gold); }
+  .player.empty { opacity: .55; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--muted); min-height: 150px; }
+
+  .felt {
+    margin-top: 14px; background: rgba(0,0,0,.18); border: 6px solid var(--rail); border-radius: 120px / 60px;
+    padding: 22px 20px; text-align: center; position: relative; min-height: 220px;
+  }
+  .banner { font-size: 1.15rem; font-weight: 700; min-height: 1.5em; }
+  .banner.win { color: var(--green); }
+  .banner.lose { color: var(--red); }
+  .dice { display: flex; justify-content: center; gap: 22px; margin: 18px 0 10px; }
+  .die {
+    width: 84px; height: 84px; background: #fff; border-radius: 16px; position: relative;
+    box-shadow: inset -4px -4px 0 rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.35);
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 10px; gap: 2px;
+  }
+  .die.rolling { animation: tumble .55s ease-in-out; }
+  @keyframes tumble {
+    0% { transform: rotate(0) translateY(0); }
+    30% { transform: rotate(140deg) translateY(-26px) scale(1.05); }
+    60% { transform: rotate(260deg) translateY(-8px); }
+    100% { transform: rotate(360deg) translateY(0); }
+  }
+  .pip { width: 100%; height: 100%; border-radius: 50%; background: var(--ink); visibility: hidden; }
+  .pip.on { visibility: visible; }
+  .total { font-size: 1.1rem; color: var(--muted); }
+  .total b { color: #fff; font-size: 1.5rem; }
+  .pucks { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .puck {
+    border-radius: 999px; padding: .35rem .8rem; font-weight: 800; font-size: .85rem; letter-spacing: .06em;
+    background: rgba(255,255,255,.12); color: var(--cream);
+  }
+  .puck.point { background: #fff; color: var(--ink); }
+  .puck.pot { background: var(--gold); color: var(--ink); }
+  .history { margin-top: 8px; font-size: .8rem; color: var(--muted); }
+
+  .controls { margin-top: 14px; background: var(--card); border-radius: 14px; padding: 14px; }
+  .stakebar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .stakebar label { color: var(--muted); font-size: .85rem; }
+  .stakebar input { width: 120px; text-align: center; font-weight: 800; font-size: 1.1rem; }
+  .chipbtns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    width: 46px; height: 46px; border-radius: 50%; padding: 0; font-size: .75rem; font-weight: 900; color: #fff;
+    border: 4px dashed rgba(255,255,255,.75); box-shadow: 0 3px 0 rgba(0,0,0,.4);
+  }
+  .chip.c5 { background: #c0392b; } .chip.c25 { background: #27ae60; } .chip.c100 { background: #2c3e50; } .chip.c500 { background: #8e44ad; }
+  .chip.max { background: var(--gold); color: var(--ink); border-style: solid; }
+  .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .actions button.big { font-size: 1.15rem; padding: .9rem 1.6rem; flex: 1; min-width: 180px; }
+  .hint { color: var(--muted); font-size: .85rem; margin-top: 8px; min-height: 1.2em; }
+
+  .log { margin-top: 14px; background: rgba(0,0,0,.35); border-radius: 12px; padding: 10px 14px; max-height: 190px; overflow: auto; font-size: .85rem; line-height: 1.5; }
+  .log div { border-bottom: 1px dashed rgba(255,255,255,.07); padding: 2px 0; }
+  .log div:last-child { border: 0; }
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--red); color: #fff;
+    padding: .7rem 1.1rem; border-radius: 10px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  @media (max-width: 640px) {
+    .players { grid-template-columns: 1fr; }
+    .die { width: 68px; height: 68px; }
+    .felt { border-radius: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= LOBBY ================= -->
+  <section id="lobby">
+    <div class="panel">
+      <h1>Craps Duel</h1>
+      <p class="sub">Two players, one table. Shooter vs. fader. Winner takes the pot.</p>
+      <label for="nameInput">Your name</label>
+      <input id="nameInput" maxlength="20" placeholder="e.g. Kiril" autocomplete="off" />
+      <label for="roomInput">Table code <span style="opacity:.6">(leave blank to open a new table)</span></label>
+      <input id="roomInput" maxlength="8" placeholder="e.g. 7XQ2" autocomplete="off" style="text-transform:uppercase;letter-spacing:.15em" />
+      <div class="row">
+        <button id="joinBtn">Sit down</button>
+      </div>
+      <div class="rules">
+        <b>How it works</b><br />
+        Each round both players put up the same stake. The shooter rolls:<br />
+        • <b>7 or 11</b> on the come-out → shooter wins the pot instantly.<br />
+        • <b>2, 3 or 12</b> on the come-out → shooter craps out, other player takes the pot.<br />
+        • Anything else sets the <b>point</b>. Shooter keeps rolling: hit the point → win, roll a 7 → seven-out, lose.<br />
+        Dice pass to the other player every round. Wins and chips won are tracked for both of you.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TABLE ================= -->
+  <section id="table">
+    <div class="topbar">
+      <div>
+        <h1 style="font-size:1.2rem;margin:0">Craps Duel</h1>
+        <span class="conn" id="conn">connecting…</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="code" id="codeLabel">----</span>
+        <button class="secondary" id="copyBtn" title="Copy invite link">Copy invite link</button>
+        <button class="secondary" id="leaveBtn">Leave</button>
+      </div>
+    </div>
+
+    <div class="players" id="players"></div>
+
+    <div class="felt">
+      <div class="banner" id="banner"></div>
+      <div class="dice">
+        <div class="die" id="die1"></div>
+        <div class="die" id="die2"></div>
+      </div>
+      <div class="total" id="total"></div>
+      <div class="pucks" id="pucks"></div>
+      <div class="history" id="history"></div>
+    </div>
+
+    <div class="controls">
+      <div class="stakebar" id="stakebar">
+        <label for="stakeInput">Stake per player</label>
+        <input id="stakeInput" type="number" min="5" step="5" />
+        <div class="chipbtns">
+          <button class="chip c5" data-add="5">+5</button>
+          <button class="chip c25" data-add="25">+25</button>
+          <button class="chip c100" data-add="100">+100</button>
+          <button class="chip c500" data-add="500">+500</button>
+          <button class="chip max" data-add="max">MAX</button>
+        </div>
+        <button class="secondary" id="setStakeBtn">Set stake</button>
+      </div>
+      <div class="actions">
+        <button class="big" id="putUpBtn">Put up chips</button>
+        <button class="big" id="rollBtn">🎲 Roll</button>
+        <button class="big" id="nextBtn">Next round →</button>
+        <button class="big danger" id="rebuyBtn">Rebuy 1000</button>
+      </div>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const lobby = $("lobby"), tableEl = $("table");
+  let ws = null, state = null, mySeat = -1, roomCode = null, token = null, reconnectDelay = 500, wantConnected = false;
+  let lastRollKey = null;
+
+  // ---------- lobby ----------
+  const pathRoom = location.pathname.replace(/^\//, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (pathRoom) $("roomInput").value = pathRoom;
+  $("nameInput").value = localStorage.getItem("craps:name") || "";
+  $("joinBtn").onclick = () => {
+    const name = $("nameInput").value.trim() || "Player";
+    localStorage.setItem("craps:name", name);
+    roomCode = $("roomInput").value.trim().toUpperCase();
+    token = roomCode ? localStorage.getItem("craps:token:" + roomCode) : null;
+    connect();
+  };
+  $("nameInput").addEventListener("keydown", (e) => e.key === "Enter" && $("joinBtn").click());
+  $("roomInput").addEventListener("keydown", (e) => e.key === "Enter" && $("joinBtn").click());
+
+  // Auto-rejoin if we were at a table in this tab before a refresh.
+  const savedRoom = sessionStorage.getItem("craps:room");
+  if (savedRoom && (!pathRoom || pathRoom === savedRoom)) {
+    roomCode = savedRoom;
+    token = localStorage.getItem("craps:token:" + roomCode);
+    connect();
+  }
+
+  // ---------- networking ----------
+  function connect() {
+    wantConnected = true;
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(`${proto}//${location.host}`);
+    setConn("connecting…", false);
+    ws.onopen = () => {
+      reconnectDelay = 500;
+      send({ type: "join", name: $("nameInput").value.trim() || localStorage.getItem("craps:name") || "Player", room: roomCode || "", token });
+    };
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === "joined") {
+        roomCode = msg.room;
+        if (msg.token) { token = msg.token; localStorage.setItem("craps:token:" + roomCode, token); }
+        sessionStorage.setItem("craps:room", roomCode);
+        history.replaceState(null, "", "/" + roomCode);
+        lobby.style.display = "none";
+        tableEl.style.display = "block";
+        setConn("connected", true);
+      } else if (msg.type === "state") {
+        state = msg.table; mySeat = msg.you;
+        render(msg);
+      } else if (msg.type === "error") {
+        toast(msg.message);
+      }
+    };
+    ws.onclose = () => {
+      if (!wantConnected) return;
+      setConn("disconnected — reconnecting…", false);
+      setTimeout(connect, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 2, 8000);
+    };
+    ws.onerror = () => ws.close();
+  }
+  function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+  setInterval(() => send({ type: "ping" }), 25000);
+  function setConn(text, ok) { const c = $("conn"); c.textContent = text; c.className = "conn" + (ok ? "" : " off"); }
+
+  // ---------- actions ----------
+  $("putUpBtn").onclick = () => send({ type: "putUp" });
+  $("rollBtn").onclick = () => send({ type: "roll" });
+  $("nextBtn").onclick = () => send({ type: "nextRound" });
+  $("rebuyBtn").onclick = () => send({ type: "rebuy", amount: 1000 });
+  $("setStakeBtn").onclick = () => send({ type: "setStake", amount: Number($("stakeInput").value) });
+  $("stakeInput").addEventListener("keydown", (e) => e.key === "Enter" && $("setStakeBtn").click());
+  document.querySelectorAll(".chip").forEach((b) => {
+    b.onclick = () => {
+      if (!state) return;
+      const cur = Number($("stakeInput").value) || 0;
+      const val = b.dataset.add === "max" ? state.maxStake : Math.min(cur + Number(b.dataset.add), state.maxStake);
+      $("stakeInput").value = val;
+      send({ type: "setStake", amount: val });
+    };
+  });
+  $("copyBtn").onclick = async () => {
+    const url = location.origin + "/" + roomCode;
+    try { await navigator.clipboard.writeText(url); toast("Invite link copied: " + url, true); }
+    catch { prompt("Share this link with your opponent:", url); }
+  };
+  $("leaveBtn").onclick = () => {
+    if (!confirm("Leave the table? Your seat and chips will be given up.")) return;
+    send({ type: "leave" });
+    wantConnected = false;
+    localStorage.removeItem("craps:token:" + roomCode);
+    sessionStorage.removeItem("craps:room");
+    ws && ws.close();
+    history.replaceState(null, "", "/");
+    tableEl.style.display = "none"; lobby.style.display = "block";
+  };
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && tableEl.style.display === "block" && !$("rollBtn").disabled && document.activeElement.tagName !== "INPUT") {
+      e.preventDefault(); $("rollBtn").click();
+    }
+  });
+
+  // ---------- rendering ----------
+  const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  function drawDie(el, n) {
+    el.innerHTML = "";
+    for (let i = 0; i < 9; i++) {
+      const p = document.createElement("div");
+      p.className = "pip" + (n && PIPS[n].includes(i) ? " on" : "");
+      el.appendChild(p);
+    }
+  }
+  drawDie($("die1"), 0); drawDie($("die2"), 0);
+
+  function render(msg) {
+    const t = state;
+    $("codeLabel").textContent = t.code;
+    const shooter = t.players[t.shooterIdx];
+    const fader = t.players[t.shooterIdx === 0 ? 1 : 0];
+    const me = mySeat >= 0 ? t.players[mySeat] : null;
+    const isShooter = mySeat === t.shooterIdx;
+
+    // players
+    const pl = $("players"); pl.innerHTML = "";
+    for (let i = 0; i < 2; i++) {
+      const p = t.players[i];
+      const div = document.createElement("div");
+      if (!p) {
+        div.className = "player empty";
+        div.textContent = "Waiting for an opponent… share the invite link";
+        pl.appendChild(div); continue;
+      }
+      div.className = "player" + (i === mySeat ? " me" : "") + (i === t.shooterIdx && t.players.length === 2 ? " shooter" : "");
+      const netCls = p.net > 0 ? "pos" : p.net < 0 ? "neg" : "";
+      let status = "";
+      if (t.phase === "betting") status = p.putUp ? `✔ ${t.stake} in the pot` : "waiting to put up chips…";
+      else if (t.phase === "comeout" || t.phase === "point") status = i === t.shooterIdx ? "rolling" : "fading the shooter";
+      else if (t.phase === "result" && t.lastResult) status = i === t.lastResult.winnerIdx ? `🏆 won ${t.lastResult.amount}` : `lost ${t.lastResult.amount}`;
+      div.innerHTML = `
+        <div class="name"><span class="dot ${p.connected ? "" : "off"}"></span>${esc(p.name)}${i === mySeat ? " <span style='opacity:.6;font-weight:500'>(you)</span>" : ""}</div>
+        <div class="chips">${p.chips}<small>chips</small></div>
+        <div class="stats">
+          <span>W <b>${p.wins}</b></span>
+          <span>L <b>${p.losses}</b></span>
+          <span>Net <b class="net ${netCls}">${p.net > 0 ? "+" : ""}${p.net}</b></span>
+          <span>Win% <b>${p.wins + p.losses ? Math.round(100 * p.wins / (p.wins + p.losses)) : 0}%</b></span>
+        </div>
+        <div class="status">${status}</div>`;
+      pl.appendChild(div);
+    }
+
+    // dice
+    if (t.lastRoll) {
+      const key = `${t.round}:${t.rolls.length}:${t.lastRoll.d1}${t.lastRoll.d2}`;
+      const animate = key !== lastRollKey;
+      lastRollKey = key;
+      [$("die1"), $("die2")].forEach((el, i) => {
+        el.classList.remove("rolling");
+        if (animate) { void el.offsetWidth; el.classList.add("rolling"); }
+        drawDie(el, i === 0 ? t.lastRoll.d1 : t.lastRoll.d2);
+      });
+      $("total").innerHTML = `<b>${t.lastRoll.total}</b>`;
+    } else {
+      drawDie($("die1"), 0); drawDie($("die2"), 0);
+      $("total").textContent = "";
+      lastRollKey = null;
+    }
+
+    // banner
+    const b = $("banner"); b.className = "banner";
+    if (t.phase === "waiting") b.textContent = "Waiting for a second player…";
+    else if (t.phase === "betting") b.textContent = `Round ${t.round} — ${esc(shooter.name)} shoots. Stake: ${t.stake} each.`;
+    else if (t.phase === "comeout") b.textContent = `Come-out roll — ${isShooter ? "you're" : esc(shooter.name) + " is"} shooting for ${t.pot}`;
+    else if (t.phase === "point") b.textContent = `Point is ${t.point} — ${isShooter ? "hit it before a 7!" : esc(shooter.name) + " needs a " + t.point + " before a 7"}`;
+    else if (t.phase === "result" && t.lastResult) {
+      const w = t.players[t.lastResult.winnerIdx];
+      const iWon = mySeat === t.lastResult.winnerIdx;
+      b.textContent = `${t.lastResult.reason}. ${esc(w.name)} wins ${t.lastResult.pot}!`;
+      if (mySeat >= 0) b.classList.add(iWon ? "win" : "lose");
+    }
+
+    // pucks
+    const pk = $("pucks"); pk.innerHTML = "";
+    if (t.pot > 0) pk.innerHTML += `<span class="puck pot">POT ${t.pot}</span>`;
+    pk.innerHTML += t.point ? `<span class="puck point">ON · ${t.point}</span>` : `<span class="puck">OFF</span>`;
+    $("history").textContent = t.rolls.length ? "This round: " + t.rolls.join(" · ") : "";
+
+    // controls
+    const seated = mySeat >= 0;
+    const betting = t.phase === "betting";
+    $("stakebar").style.display = betting && seated ? "flex" : "none";
+    if (betting && document.activeElement !== $("stakeInput")) $("stakeInput").value = t.stake;
+    $("stakeInput").max = t.maxStake;
+    $("putUpBtn").style.display = betting && seated ? "" : "none";
+    $("putUpBtn").disabled = !me || me.putUp || me.chips < t.stake;
+    $("putUpBtn").textContent = me && me.putUp ? "Chips are up ✔" : `Put up ${t.stake} chips`;
+    const canRoll = seated && isShooter && (t.phase === "comeout" || t.phase === "point");
+    $("rollBtn").style.display = (t.phase === "comeout" || t.phase === "point") ? "" : "none";
+    $("rollBtn").disabled = !canRoll;
+    $("rollBtn").textContent = canRoll ? "🎲 Roll (space)" : `🎲 ${shooter ? esc(shooter.name) : "Shooter"} is rolling…`;
+    $("nextBtn").style.display = t.phase === "result" && seated ? "" : "none";
+    const busted = me && me.chips < t.minStake && (betting || t.phase === "result" || t.phase === "waiting");
+    $("rebuyBtn").style.display = busted ? "" : "none";
+
+    let hint = "";
+    if (!seated) hint = `You're watching. ${msg.spectators ? "" : ""}The table is full.`;
+    else if (t.phase === "waiting") hint = "Send your opponent the invite link (button at the top).";
+    else if (betting) {
+      if (me.chips < t.minStake) hint = "You're out of chips — rebuy to keep playing.";
+      else if (!me.putUp) hint = isShooter ? "You're the shooter this round. Agree on a stake and put up your chips." : "You're fading the shooter this round. Put up your chips to match.";
+      else hint = `Waiting for ${esc(fader === me ? shooter.name : fader.name)} to put up chips…`;
+    }
+    else if (t.phase === "comeout") hint = isShooter ? "7 or 11 wins now. 2, 3 or 12 loses now. Anything else sets your point." : "If they hit 7 or 11 you lose; 2, 3 or 12 and you win the pot.";
+    else if (t.phase === "point") hint = isShooter ? `Roll a ${t.point} to win. A 7 loses.` : `You win if a 7 comes before another ${t.point}.`;
+    else if (t.phase === "result") hint = "Either player can start the next round. The dice pass to the other player.";
+    $("hint").innerHTML = hint;
+
+    // log
+    const lg = $("log");
+    const atBottom = lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 10;
+    lg.innerHTML = t.log.map((l) => `<div>${esc(l.text)}</div>`).join("");
+    if (atBottom) lg.scrollTop = lg.scrollHeight;
+  }
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  let toastTimer;
+  function toast(text, ok) {
+    const el = $("toast"); el.textContent = text; el.style.background = ok ? "var(--green)" : "var(--red)";
+    el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+  }
+})();
+</script>
+</body>
+</html>
