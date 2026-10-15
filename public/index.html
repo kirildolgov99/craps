@@ -55,7 +55,9 @@
   .conn { font-size: .8rem; color: var(--muted); }
   .conn.off { color: var(--red); }
 
-  .players { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .seat { margin-top: 12px; }
+  .seat .hdr { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 6px; }
+  .player .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
   .player { background: var(--card); border-radius: 14px; padding: 12px 14px; position: relative; border: 2px solid transparent; }
   .player.me { border-color: rgba(230,184,76,.55); }
   .player .tag { position: absolute; top: -10px; right: 12px; background: var(--gold); color: var(--ink); font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: .08em; }
@@ -68,7 +70,7 @@
   .player .stats b { color: var(--cream); }
   .net.pos { color: var(--green) !important; } .net.neg { color: var(--red) !important; }
   .player .status { margin-top: 6px; font-size: .8rem; min-height: 1.2em; color: var(--gold); }
-  .player.empty { opacity: .55; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--muted); min-height: 190px; text-align: center; }
+  .player.empty { opacity: .55; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--muted); min-height: 120px; text-align: center; }
 
   /* chips */
   .rack { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
@@ -98,27 +100,34 @@
   .betspot.ready { border-color: var(--green); border-style: solid; }
 
   /* felt */
-  .felt { margin-top: 14px; background: rgba(0,0,0,.18); border: 6px solid var(--rail); border-radius: 120px / 60px; padding: 22px 20px 18px; text-align: center; min-height: 230px; }
+  .felt { margin-top: 12px; background: rgba(0,0,0,.18); border: 6px solid var(--rail); border-radius: 120px / 60px; padding: 22px 20px 18px; text-align: center; min-height: 230px; }
   .banner { font-size: 1.1rem; font-weight: 700; min-height: 1.5em; }
   .banner.win { color: var(--green); } .banner.lose { color: var(--red); }
   .dice { display: flex; justify-content: center; gap: 36px; margin: 22px 0 14px; perspective: 700px; }
-  .scene { width: 76px; height: 76px; }
+  .scene { width: 76px; height: 76px; --h: 38px; transform-style: preserve-3d; will-change: transform; transform: translateZ(0); }
   .scene.bounce { animation: bounce .9s cubic-bezier(.3,.7,.3,1); }
   @keyframes bounce {
-    0% { transform: translateY(-70px) translateX(-30px); } 55% { transform: translateY(6px) translateX(8px); }
-    75% { transform: translateY(-10px) translateX(0); } 100% { transform: translateY(0); }
+    0% { transform: translateY(-70px) translateX(-30px) translateZ(0); } 55% { transform: translateY(6px) translateX(8px) translateZ(0); }
+    75% { transform: translateY(-10px) translateX(0) translateZ(0); } 100% { transform: translateY(0) translateZ(0); }
   }
-  .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.2,.75,.25,1); transform: rotateX(-20deg) rotateY(25deg); }
+  .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.2,.75,.25,1); transform: rotateX(-14deg) rotateY(18deg); }
+  .face, .core {
+    position: absolute; inset: 0; background: #fbfbf7; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
   .face {
-    position: absolute; inset: 0; background: #fbfbf7; border-radius: 14px;
-    display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 9px; gap: 2px;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset -3px -3px 8px rgba(0,0,0,.08);
+    border-radius: 16px; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 9px; gap: 2px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.07), inset -3px -3px 8px rgba(0,0,0,.08);
   }
-  .face .pip { border-radius: 50%; background: var(--ink); visibility: hidden; }
+  /* A solid inner block so the cube's rounded corners aren't see-through. */
+  .core { inset: 7px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.05); }
+  .face .pip { width: 76%; height: 76%; place-self: center; border-radius: 50%; background: var(--ink); visibility: hidden; }
   .face .pip.on { visibility: visible; }
-  .f1 { transform: translateZ(38px); } .f6 { transform: rotateY(180deg) translateZ(38px); }
-  .f2 { transform: rotateY(90deg) translateZ(38px); } .f5 { transform: rotateY(-90deg) translateZ(38px); }
-  .f3 { transform: rotateX(90deg) translateZ(38px); } .f4 { transform: rotateX(-90deg) translateZ(38px); }
+  .f1 { transform: translateZ(var(--h)); } .f6 { transform: rotateY(180deg) translateZ(var(--h)); }
+  .f2 { transform: rotateY(90deg) translateZ(var(--h)); } .f5 { transform: rotateY(-90deg) translateZ(var(--h)); }
+  .f3 { transform: rotateX(90deg) translateZ(var(--h)); } .f4 { transform: rotateX(-90deg) translateZ(var(--h)); }
+  .c1 { transform: translateZ(calc(var(--h) - 4px)); } .c6 { transform: rotateY(180deg) translateZ(calc(var(--h) - 4px)); }
+  .c2 { transform: rotateY(90deg) translateZ(calc(var(--h) - 4px)); } .c5 { transform: rotateY(-90deg) translateZ(calc(var(--h) - 4px)); }
+  .c3 { transform: rotateX(90deg) translateZ(calc(var(--h) - 4px)); } .c4 { transform: rotateX(-90deg) translateZ(calc(var(--h) - 4px)); }
   .total { font-size: 1rem; color: var(--muted); min-height: 1.6rem; }
   .total b { color: #fff; font-size: 1.5rem; }
   .pucks { display: flex; justify-content: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
@@ -127,8 +136,7 @@
   .history { margin-top: 8px; font-size: .8rem; color: var(--muted); }
 
   /* controls */
-  .controls { margin-top: 14px; background: var(--card); border-radius: 14px; padding: 14px; }
-  .controls h3 { margin: 0 0 8px; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .player h3 { margin: 12px 0 6px; font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
   .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
   .actions .big { font-size: 1.1rem; padding: .85rem 1.5rem; flex: 1; min-width: 170px; }
   .ownerbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); font-size: .85rem; color: var(--muted); }
@@ -153,13 +161,8 @@
   .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--red); color: #fff; padding: .7rem 1.1rem; border-radius: 10px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; max-width: 90vw; text-align: center; }
   .toast.show { opacity: 1; }
   @media (max-width: 680px) {
-    .players { grid-template-columns: 1fr; }
     .felt { border-radius: 40px; }
-    .scene { width: 64px; height: 64px; }
-    .f1,.f6,.f2,.f5,.f3,.f4 { --z: 32px; }
-    .f1 { transform: translateZ(32px); } .f6 { transform: rotateY(180deg) translateZ(32px); }
-    .f2 { transform: rotateY(90deg) translateZ(32px); } .f5 { transform: rotateY(-90deg) translateZ(32px); }
-    .f3 { transform: rotateX(90deg) translateZ(32px); } .f4 { transform: rotateX(-90deg) translateZ(32px); }
+    .scene { width: 64px; height: 64px; --h: 32px; }
   }
 </style>
 </head>
@@ -204,7 +207,10 @@
       </div>
     </div>
 
-    <div class="players" id="players"></div>
+    <div class="seat" id="topSeatWrap">
+      <div class="hdr" id="topHdr">Opponent</div>
+      <div class="player" id="topSeat"></div>
+    </div>
 
     <div class="felt">
       <div class="banner" id="banner"></div>
@@ -217,26 +223,32 @@
       <div class="history" id="history"></div>
     </div>
 
-    <div class="controls" id="controls">
-      <div id="betPanel">
-        <h3>Your rack — tap a chip to bet it</h3>
-        <div class="rack" id="myRack"></div>
-        <div class="betspot" id="myBet"></div>
-      </div>
-      <div class="actions">
-        <button class="big" id="matchBtn">Match</button>
-        <button class="secondary" id="clearBtn">Clear bet</button>
-        <button class="big go" id="readyBtn">I'm in</button>
-        <button class="big go" id="rollBtn">🎲 Roll</button>
-        <button class="big" id="nextBtn">Next round →</button>
-        <button class="secondary" id="exchangeBtn">Exchange with dealer</button>
-        <button class="danger" id="rebuyBtn">Rebuy</button>
-      </div>
-      <div class="hint" id="hint" style="margin-top:8px"></div>
-      <div class="ownerbar" id="ownerbar">
-        <span>You own this table. Buy-in for new seats and rebuys:</span>
-        <div class="money"><input id="ownerBuyIn" type="number" min="1" step="0.5" /></div>
-        <button class="secondary" id="setBuyInBtn">Update</button>
+    <div class="seat" id="bottomSeatWrap">
+      <div class="hdr" id="bottomHdr">You</div>
+      <div class="player me" id="bottomSeat">
+        <div id="bottomInfo"></div>
+        <div id="betPanel">
+          <h3 id="rackTitle">Your rack — tap a chip to bet it</h3>
+          <div class="rack" id="myRack"></div>
+          <div class="betspot" id="myBet"></div>
+        </div>
+        <div id="controls">
+          <div class="actions">
+            <button class="big" id="matchBtn">Match</button>
+            <button class="secondary" id="clearBtn">Clear bet</button>
+            <button class="big go" id="readyBtn">I'm in</button>
+            <button class="big go" id="rollBtn">🎲 Roll</button>
+            <button class="big" id="nextBtn">Next round →</button>
+            <button class="secondary" id="exchangeBtn">Exchange with dealer</button>
+            <button class="danger" id="rebuyBtn">Rebuy</button>
+          </div>
+          <div class="hint" id="hint" style="margin-top:8px"></div>
+          <div class="ownerbar" id="ownerbar">
+            <span>You own this table. Buy-in for new seats and rebuys:</span>
+            <div class="money"><input id="ownerBuyIn" type="number" min="1" step="0.5" /></div>
+            <button class="secondary" id="setBuyInBtn">Update</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -407,6 +419,7 @@
   const FACE_ROT = { 1: [0, 0], 6: [0, 180], 2: [0, -90], 5: [0, 90], 3: [-90, 0], 4: [90, 0] };
   function buildCube(el) {
     el.innerHTML = "";
+    for (let f = 1; f <= 6; f++) { const c = document.createElement("div"); c.className = `core c${f}`; el.appendChild(c); }
     for (let f = 1; f <= 6; f++) {
       const face = document.createElement("div"); face.className = `face f${f}`;
       for (let i = 0; i < 9; i++) { const p = document.createElement("div"); p.className = "pip" + (PIPS[f].includes(i) ? " on" : ""); face.appendChild(p); }
@@ -420,7 +433,9 @@
     if (animate) spins[i] += 2 + Math.floor(Math.random() * 2);
     const extraX = animate ? 360 * spins[i] : 0, extraY = animate ? 360 * (spins[i] + 1) : 0;
     cube.style.transition = animate ? "" : "none";
-    cube.style.transform = `rotateX(${rx + extraX}deg) rotateY(${ry + extraY}deg)`;
+    // Rest at a slight tilt (mirrored per die) so the dice read as solid 3D and no face sits edge-on.
+    const tiltY = i === 0 ? 18 : -18;
+    cube.style.transform = `rotateX(-14deg) rotateY(${tiltY}deg) rotateX(${rx + extraX}deg) rotateY(${ry + extraY}deg)`;
     if (animate) { scene.classList.remove("bounce"); void scene.offsetWidth; scene.classList.add("bounce"); }
   }
   function animateDice(d1, d2) { showFace(0, d1, true); showFace(1, d2, true); }
@@ -452,28 +467,41 @@
     const betting = t.phase === "betting";
     const betweenRounds = ["waiting", "betting", "result"].includes(t.phase);
 
-    // players
-    const pl = $("players"); pl.innerHTML = "";
-    for (let i = 0; i < 2; i++) {
-      const p = t.players[i];
-      const div = document.createElement("div");
-      if (!p) { div.className = "player empty"; div.textContent = "Waiting for an opponent… send them the invite link"; pl.appendChild(div); continue; }
-      div.className = "player" + (i === mySeat ? " me" : "");
-      const netCls = p.net > 0 ? "pos" : p.net < 0 ? "neg" : "";
-      let status = "";
-      if (betting) status = p.ready ? `✔ in for ${fmt(value(p.bet))}` : value(p.bet) ? `has ${fmt(value(p.bet))} up, not locked in` : "placing a bet…";
-      else if (t.phase === "comeout" || t.phase === "point") status = i === t.shooterIdx ? "rolling" : "fading the shooter";
-      else if (t.phase === "result" && t.lastResult) status = i === t.lastResult.winnerIdx ? `🏆 won ${fmt(t.lastResult.amount)}` : `lost ${fmt(t.lastResult.amount)}`;
-      div.innerHTML = `
+    // seats: opponent on top, you (or seat 0 for spectators) on the bottom
+    const topIdx = mySeat >= 0 ? (mySeat === 0 ? 1 : 0) : 1;
+    const bottomIdx = mySeat >= 0 ? mySeat : 0;
+    const statusOf = (p, i) => {
+      if (betting) return p.ready ? `✔ in for ${fmt(value(p.bet))}` : value(p.bet) ? `has ${fmt(value(p.bet))} up, not locked in` : "placing a bet…";
+      if (t.phase === "comeout" || t.phase === "point") return i === t.shooterIdx ? "rolling" : "fading the shooter";
+      if (t.phase === "result" && t.lastResult) return i === t.lastResult.winnerIdx ? `🏆 won ${fmt(t.lastResult.amount)}` : `lost ${fmt(t.lastResult.amount)}`;
+      return "";
+    };
+    const infoHtml = (p, i) => `
         ${i === t.shooterIdx && t.players.length === 2 ? '<span class="tag">🎲 SHOOTER</span>' : ""}
-        <div class="name"><span class="dot ${p.connected ? "" : "off"}"></span>${esc(p.name)}${i === mySeat ? " <span style='opacity:.6;font-weight:500'>(you)</span>" : ""}${i === t.ownerSeat ? '<span class="owner">★ OWNER</span>' : ""}</div>
-        <div class="bank">${fmt(p.bankroll)}</div>
-        <div class="stats"><span>W <b>${p.wins}</b></span><span>L <b>${p.losses}</b></span><span>Net <b class="net ${netCls}">${p.net > 0 ? "+" : ""}${fmt(p.net)}</b></span><span>Bought in <b>${fmt(p.boughtIn)}</b></span></div>
-        <div class="status">${status}</div>
-        ${i !== mySeat ? `<div class="rack">${rackHtml(p.rack, false)}</div>` : ""}
-        <div class="betspot ${p.ready ? "ready" : ""}">${betHtml(p, false, i === mySeat ? "Your bet" : "Their bet")}</div>`;
-      pl.appendChild(div);
+        <div class="top">
+          <div>
+            <div class="name"><span class="dot ${p.connected ? "" : "off"}"></span>${esc(p.name)}${i === mySeat ? " <span style='opacity:.6;font-weight:500'>(you)</span>" : ""}${i === t.ownerSeat ? '<span class="owner">★ OWNER</span>' : ""}</div>
+            <div class="bank">${fmt(p.bankroll)}</div>
+          </div>
+          <div class="stats"><span>W <b>${p.wins}</b></span><span>L <b>${p.losses}</b></span><span>Net <b class="net ${p.net > 0 ? "pos" : p.net < 0 ? "neg" : ""}">${p.net > 0 ? "+" : ""}${fmt(p.net)}</b></span><span>Bought in <b>${fmt(p.boughtIn)}</b></span></div>
+        </div>
+        <div class="status">${statusOf(p, i)}</div>`;
+
+    const topP = t.players[topIdx];
+    const topEl = $("topSeat");
+    $("topHdr").textContent = mySeat >= 0 ? "Opponent" : "Seat 2";
+    if (!topP) { topEl.className = "player empty"; topEl.textContent = "Waiting for an opponent… send them the invite link"; }
+    else {
+      topEl.className = "player";
+      topEl.innerHTML = infoHtml(topP, topIdx) + `<div class="rack">${rackHtml(topP.rack, false)}</div><div class="betspot ${topP.ready ? "ready" : ""}">${betHtml(topP, false, "Their bet")}</div>`;
     }
+
+    const bottomP = t.players[bottomIdx];
+    const bottomEl = $("bottomSeat");
+    $("bottomHdr").textContent = mySeat >= 0 ? "You" : "Seat 1";
+    bottomEl.className = "player" + (mySeat >= 0 ? " me" : "");
+    if (!bottomP) { $("bottomInfo").innerHTML = ""; $("bottomSeatWrap").style.display = "none"; }
+    else { $("bottomSeatWrap").style.display = ""; $("bottomInfo").innerHTML = infoHtml(bottomP, bottomIdx); }
 
     // dice
     if (t.lastRoll) {
@@ -505,8 +533,14 @@
     // my controls
     const seated = mySeat >= 0;
     $("controls").style.display = seated ? "" : "none";
+    if (!seated && bottomP) {
+      $("rackTitle").textContent = "Their rack";
+      $("myRack").innerHTML = rackHtml(bottomP.rack, false);
+      $("myBet").className = "betspot" + (bottomP.ready ? " ready" : "");
+      $("myBet").innerHTML = betHtml(bottomP, false, "Their bet");
+    }
     if (seated) {
-      $("betPanel").style.display = "";
+      $("rackTitle").textContent = betting ? "Your rack — tap a chip to bet it" : "Your rack";
       $("myRack").innerHTML = rackHtml(me.rack, betting);
       $("myBet").className = "betspot" + (me.ready ? " ready" : "");
       $("myBet").innerHTML = betHtml(me, betting, betting ? "Your bet — tap a chip to take it back" : "Your bet");
