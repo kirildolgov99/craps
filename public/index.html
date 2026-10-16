@@ -106,6 +106,9 @@
   .dice { display: flex; justify-content: center; gap: 36px; margin: 22px 0 14px; }
   .scene { width: 76px; height: 76px; --h: 38px; perspective: 520px; perspective-origin: 50% 40%; }
   .scene.bounce { animation: bounce .9s cubic-bezier(.3,.7,.3,1); }
+  .scene.pending { opacity: .3; filter: grayscale(.4); }
+  .dicelabels { display: flex; justify-content: center; gap: 36px; margin-top: -6px; font-size: .8rem; color: var(--muted); }
+  .dicelabels span { width: 76px; text-align: center; } .dicelabels b { color: var(--cream); }
   @keyframes bounce {
     0% { transform: translateY(-70px) translateX(-30px); } 55% { transform: translateY(6px) translateX(8px); }
     75% { transform: translateY(-10px) translateX(0); } 100% { transform: translateY(0); }
@@ -211,6 +214,7 @@
         <div class="scene" id="scene1"><div class="cube" id="cube1"></div></div>
         <div class="scene" id="scene2"><div class="cube" id="cube2"></div></div>
       </div>
+      <div class="dicelabels" id="dicelabels"></div>
       <div class="total" id="total"></div>
       <div class="pucks" id="pucks"></div>
       <div class="history" id="history"></div>
@@ -229,6 +233,7 @@
           <div class="actions">
             <button class="big" id="matchBtn">Match</button>
             <button class="secondary" id="clearBtn">Clear bet</button>
+            <button class="danger" id="allInBtn">All in</button>
             <button class="big go" id="readyBtn">I'm in</button>
             <button class="big go" id="rollBtn">🎲 Roll</button>
             <button class="big" id="nextBtn">Next round →</button>
@@ -269,7 +274,7 @@
   const lobby = $("lobby"), tableEl = $("table");
   const DENOMS = [1000, 500, 300, 100, 50];
   let ws = null, state = null, mySeat = -1, roomCode = null, token = null, reconnectDelay = 500, wantConnected = false;
-  let latestMsg = null, holdTimer = null, shownRollKey = null, spins = [0, 0];
+  let latestMsg = null, holdTimer = null, shownKey = null, shownDice = [null, null], spins = [0, 0];
 
   const fmt = (c) => { const n = c < 0 ? "-" : "", a = Math.abs(c), d = Math.floor(a / 100), r = a % 100; return r ? `${n}$${d}.${String(r).padStart(2, "0")}` : `${n}$${d}`; };
   const chipLabel = (d) => d === 50 ? "50¢" : "$" + d / 100;
@@ -336,28 +341,44 @@
   function lobbyStatus(html, isError) { const el = $("lobbyStatus"); el.innerHTML = html; el.style.color = isError ? "var(--red)" : "var(--muted)"; }
   function setConn(text, ok) { const c = $("conn"); c.textContent = text; c.className = "conn" + (ok ? "" : " off"); }
 
+  // Which dice are on the felt right now, and a key that changes whenever a new roll lands.
+  function currentDice(t) {
+    if (t.phase === "rolloff" && t.rolloff) return { key: `ro:${t.rolloff.attempt}:${t.rolloff.dice.join(",")}`, dice: t.rolloff.dice, rolloff: true };
+    if (t.lastRoll) return { key: `r:${t.round}:${t.rolls.length}`, dice: [t.lastRoll.d1, t.lastRoll.d2] };
+    if (t.firstRoll && t.round === 1 && t.phase === "betting") return { key: `fr:${t.firstRoll.dice.join(",")}`, dice: t.firstRoll.dice, rolloff: true };
+    return { key: null, dice: [null, null] };
+  }
+
   // Hold the UI while the dice tumble so the result lands when they do.
   function onState(msg) {
     latestMsg = msg;
     const t = msg.table;
-    const key = t.lastRoll ? `${t.round}:${t.rolls.length}` : null;
-    if (key && key !== shownRollKey) {
-      shownRollKey = key;
-      animateDice(t.lastRoll.d1, t.lastRoll.d2);
-      $("banner").textContent = "Rolling…"; $("banner").className = "banner";
-      $("rollBtn").disabled = true;
-      clearTimeout(holdTimer);
-      holdTimer = setTimeout(() => { holdTimer = null; render(latestMsg); }, 1000);
-      return;
+    const cd = currentDice(t);
+    if (cd.key !== shownKey) {
+      let animated = false;
+      for (let i = 0; i < 2; i++) {
+        const v = cd.dice[i];
+        // In a roll-off only the die that was just thrown tumbles; in a normal roll both do.
+        const fresh = v != null && (cd.rolloff ? shownDice[i] == null : true);
+        if (fresh) { showFace(i, v, true); animated = true; }
+      }
+      shownKey = cd.key; shownDice = [...cd.dice];
+      if (animated) {
+        $("banner").textContent = "Rolling…"; $("banner").className = "banner";
+        $("rollBtn").disabled = true;
+        clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => { holdTimer = null; render(latestMsg); }, 1000);
+        return;
+      }
     }
     if (holdTimer) return;
-    if (!key) shownRollKey = null;
     render(msg);
   }
 
   // ---------- actions ----------
   $("matchBtn").onclick = () => send({ type: "matchBet" });
   $("clearBtn").onclick = () => send({ type: "clearBet" });
+  $("allInBtn").onclick = () => { if (confirm(`Push all ${fmt(state.players[mySeat].bankroll)} into the pot?`)) send({ type: "allIn" }); };
   $("readyBtn").onclick = () => send({ type: "ready", ready: !(state && state.players[mySeat] && state.players[mySeat].ready) });
   $("rollBtn").onclick = () => send({ type: "roll" });
   $("nextBtn").onclick = () => send({ type: "nextRound" });
@@ -457,19 +478,21 @@
     const other = mySeat >= 0 ? t.players[mySeat === 0 ? 1 : 0] : null;
     const isShooter = mySeat === t.shooterIdx;
     const betting = t.phase === "betting";
-    const betweenRounds = ["waiting", "betting", "result"].includes(t.phase);
+    const betweenRounds = ["waiting", "rolloff", "betting", "result"].includes(t.phase);
+    const rolloff = t.phase === "rolloff";
 
     // seats: opponent on top, you (or seat 0 for spectators) on the bottom
     const topIdx = mySeat >= 0 ? (mySeat === 0 ? 1 : 0) : 1;
     const bottomIdx = mySeat >= 0 ? mySeat : 0;
     const statusOf = (p, i) => {
+      if (t.phase === "rolloff") return t.rolloff.dice[i] != null ? `rolled a ${t.rolloff.dice[i]}` : "rolling for first…";
       if (betting) return p.ready ? `✔ in for ${fmt(value(p.bet))}` : value(p.bet) ? `has ${fmt(value(p.bet))} up, not in yet` : "placing a bet…";
       if (t.phase === "comeout" || t.phase === "point") return i === t.shooterIdx ? "rolling" : "fading the shooter";
       if (t.phase === "result" && t.lastResult) return i === t.lastResult.winnerIdx ? `🏆 won ${fmt(t.lastResult.amount)}` : `lost ${fmt(t.lastResult.amount)}`;
       return "";
     };
     const infoHtml = (p, i) => `
-        ${i === t.shooterIdx && t.players.length === 2 ? '<span class="tag">🎲 SHOOTER</span>' : ""}
+        ${i === t.shooterIdx && t.players.length === 2 && t.phase !== "rolloff" ? '<span class="tag">🎲 SHOOTER</span>' : ""}
         <div class="top">
           <div>
             <div class="name"><span class="dot ${p.connected ? "" : "off"}"></span>${esc(p.name)}${i === mySeat ? " <span style='opacity:.6;font-weight:500'>(you)</span>" : ""}${i === t.ownerSeat ? '<span class="owner">★ OWNER</span>' : ""}</div>
@@ -496,17 +519,31 @@
     else { $("bottomSeatWrap").style.display = ""; $("bottomInfo").innerHTML = infoHtml(bottomP, bottomIdx); }
 
     // dice
-    if (t.lastRoll) {
-      if (!holdTimer && shownRollKey !== `${t.round}:${t.rolls.length}`) setDiceStill(t.lastRoll.d1, t.lastRoll.d2);
-      $("total").innerHTML = `<b>${t.lastRoll.total}</b>`;
-    } else { $("total").textContent = ""; }
+    const cd = currentDice(t);
+    for (let i = 0; i < 2; i++) {
+      const v = cd.dice[i];
+      $("scene" + (i + 1)).classList.toggle("pending", cd.rolloff && v == null);
+      if (!holdTimer) showFace(i, v == null ? 1 : v, false);
+    }
+    if (cd.rolloff && t.players.length === 2) {
+      $("dicelabels").innerHTML = t.players.map((p, i) => `<span>${esc(p.name)}<br><b>${cd.dice[i] ?? "–"}</b></span>`).join("");
+      $("total").textContent = "";
+    } else {
+      $("dicelabels").innerHTML = "";
+      $("total").innerHTML = t.lastRoll ? `<b>${t.lastRoll.total}</b>` : "";
+    }
 
     // banner
     const b = $("banner"); b.className = "banner";
     if (t.phase === "waiting") b.textContent = "Waiting for a second player…";
+    else if (t.phase === "rolloff") {
+      const ro = t.rolloff;
+      b.textContent = ro.attempt > 1 && ro.dice.every((d) => d == null) ? "Tie! Roll again — high roll shoots first." : "Roll-off — each player rolls one die. High roll shoots first.";
+    }
     else if (betting) {
       const a = t.players[0], c = t.players[1], va = value(a.bet), vc = value(c.bet);
       if (va && vc && va !== vc) { const low = va < vc ? a : c; b.textContent = `${a.ready && c.ready ? "Both in but bets don't match" : "Bets don't match"} — ${esc(low.name)} needs to match ${fmt(Math.max(va, vc))}`; }
+      else if (t.round === 1 && t.firstRoll && !t.lastRoll) b.textContent = `${esc(shooter.name)} won the roll-off and shoots first. Place your bets.`;
       else b.textContent = `Round ${t.round} — ${esc(shooter.name)} has the dice. Place your bets.`;
     }
     else if (t.phase === "comeout") b.textContent = `Come-out roll for ${fmt(t.pot)} — ${isShooter ? "you're" : esc(shooter.name) + " is"} shooting`;
@@ -532,6 +569,7 @@
       $("myBet").innerHTML = betHtml(bottomP, false, "Their bet");
     }
     if (seated) {
+      $("betPanel").style.display = rolloff ? "none" : "";
       $("rackTitle").textContent = betting ? "Your rack — tap a chip to bet it" : "Your rack";
       $("myRack").innerHTML = rackHtml(me.rack, betting);
       $("myBet").className = "betspot" + (me.ready ? " ready" : "");
@@ -544,28 +582,38 @@
       $("matchBtn").style.display = betting && other && theirs > 0 && mine !== theirs ? "" : "none";
       $("matchBtn").textContent = `Match ${fmt(theirs)}`;
       $("clearBtn").style.display = betting && mine > 0 ? "" : "none";
+      $("allInBtn").style.display = betting && !me.ready && value(me.rack) > 0 ? "" : "none";
+      $("allInBtn").textContent = `All in ${fmt(me.bankroll)}`;
       $("readyBtn").style.display = betting ? "" : "none";
       $("readyBtn").disabled = !me.ready && mine === 0;
       $("readyBtn").textContent = me.ready ? `✔ In for ${fmt(mine)} (tap to undo)` : mine ? `I'm in for ${fmt(mine)}` : "I'm in";
       $("readyBtn").className = me.ready ? "big secondary" : "big go";
       const rolling = t.phase === "comeout" || t.phase === "point";
-      $("rollBtn").style.display = rolling ? "" : "none";
-      $("rollBtn").disabled = !isShooter;
-      $("rollBtn").textContent = isShooter ? "🎲 Roll (space)" : `🎲 ${esc(shooter.name)} is rolling…`;
+      $("rollBtn").style.display = rolling || rolloff ? "" : "none";
+      if (rolloff) {
+        const mineRolled = t.rolloff.dice[mySeat] != null;
+        $("rollBtn").disabled = mineRolled;
+        $("rollBtn").textContent = mineRolled ? `🎲 Waiting for ${esc(other.name)} to roll…` : "🎲 Roll for first (space)";
+      } else {
+        $("rollBtn").disabled = !isShooter;
+        $("rollBtn").textContent = isShooter ? "🎲 Roll (space)" : `🎲 ${esc(shooter.name)} is rolling…`;
+      }
       $("nextBtn").style.display = t.phase === "result" ? "" : "none";
       $("exchangeBtn").style.display = betweenRounds ? "" : "none";
-      $("rebuyBtn").style.display = betweenRounds ? "" : "none";
+      $("rebuyBtn").style.display = betweenRounds && me.bankroll === 0 ? "" : "none";
       $("rebuyBtn").textContent = `Rebuy ${fmt(t.buyIn)}`;
       $("ownerbar").style.display = mySeat === t.ownerSeat && betweenRounds ? "flex" : "none";
       if (document.activeElement !== $("ownerBuyIn")) $("ownerBuyIn").value = (t.buyIn / 100).toString();
 
       let hint = "";
       if (t.phase === "waiting") hint = "Send your opponent the invite link. You can change the buy-in below until they sit down.";
+      else if (rolloff) hint = t.rolloff.dice[mySeat] != null ? "Your die is down. Once they roll, the higher number takes the dice first." : "Roll one die. Higher number shoots first; a tie rolls again.";
       else if (betting) {
-        if (me.bankroll < 50) hint = "You're out of chips — rebuy to keep playing.";
+        if (me.bankroll === 0) hint = "You're out of chips — rebuy to keep playing.";
         else if (me.ready && mine < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up. Tap Match to go live at ${fmt(theirs)}.`;
         else if (me.ready) hint = theirs === mine ? `Waiting for ${esc(other.name)} to say they're in…` : `Waiting for ${esc(other.name)} to match ${fmt(mine)}…`;
         else if (mine === 0) hint = isShooter ? "You're the shooter. Tap chips in your rack to put them up, then I'm in." : "You're fading the shooter. Tap chips in your rack to put them up, then I'm in.";
+        else if (mine < theirs && me.bankroll < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up, more than you have. Tap Match to go all in for ${fmt(me.bankroll)}; their bet trims to match.`;
         else if (mine < theirs) hint = `${esc(other.name)} has ${fmt(theirs)} up. Tap Match, or add ${fmt(theirs - mine)} and say I'm in.`;
         else hint = "Tap I'm in when you're happy with your bet. The round goes live when you both are in at the same amount.";
       }

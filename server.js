@@ -109,6 +109,8 @@ function publicState(room, ws) {
       rolls: t.rolls,
       round: t.round,
       lastResult: t.lastResult,
+      rolloff: t.rolloff,
+      firstRoll: t.firstRoll,
       log: t.log.slice(-25),
       players: t.players.map((p) => ({
         name: p.name,
@@ -239,6 +241,10 @@ function handle(ws, msg) {
       requireSeat(seat);
       G.matchBet(t, seat);
       break;
+    case "allIn":
+      requireSeat(seat);
+      G.allIn(t, seat);
+      break;
     case "ready":
       requireSeat(seat);
       G.setReady(t, seat, msg.ready !== false);
@@ -249,7 +255,8 @@ function handle(ws, msg) {
       break;
     case "roll":
       requireSeat(seat);
-      G.roll(t, seat);
+      if (t.phase === G.PHASES.ROLLOFF) G.rollForFirst(t, seat);
+      else G.roll(t, seat);
       break;
     case "nextRound":
       requireSeat(seat);

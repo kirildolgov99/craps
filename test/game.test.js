@@ -10,6 +10,11 @@ function seated(buyIn = $(50)) {
   t.buyIn = buyIn;
   G.seatPlayer(t, G.newPlayer("a", "Alice", buyIn));
   G.seatPlayer(t, G.newPlayer("b", "Bob", buyIn));
+  // Settle the roll-off deterministically: Alice 6, Bob 1 -> Alice shoots first.
+  G.rollForFirst(t, 0, diceRng([6]));
+  G.rollForFirst(t, 1, diceRng([1]));
+  assert.equal(t.phase, G.PHASES.BETTING);
+  assert.equal(t.shooterIdx, 0);
   return t;
 }
 function bet(t, seat, denoms) { for (const d of denoms) G.placeChip(t, seat, d); }
@@ -62,6 +67,28 @@ test("fmt prints dollars and cents", () => {
 });
 
 // ---- table flow ----
+test("two players seated starts a roll-off; high die shoots first; ties re-roll", () => {
+  const t = G.newTable("X");
+  G.seatPlayer(t, G.newPlayer("a", "Alice"));
+  assert.equal(t.phase, G.PHASES.WAITING);
+  G.seatPlayer(t, G.newPlayer("b", "Bob"));
+  assert.equal(t.phase, G.PHASES.ROLLOFF);
+  assert.throws(() => G.placeChip(t, 0, 100), /closed/);
+  assert.throws(() => G.roll(t, 0), /not time to roll/);
+  G.rollForFirst(t, 1, diceRng([4]));           // Bob first, order doesn't matter
+  assert.throws(() => G.rollForFirst(t, 1, diceRng([6])), /already rolled/);
+  G.rollForFirst(t, 0, diceRng([4]));           // tie
+  assert.equal(t.phase, G.PHASES.ROLLOFF);
+  assert.deepEqual(t.rolloff.dice, [null, null]);
+  assert.equal(t.rolloff.attempt, 2);
+  G.rollForFirst(t, 0, diceRng([2]));
+  G.rollForFirst(t, 1, diceRng([5]));           // Bob wins
+  assert.equal(t.phase, G.PHASES.BETTING);
+  assert.equal(t.shooterIdx, 1);
+  assert.deepEqual(t.firstRoll, { dice: [2, 5], winnerIdx: 1 });
+  assert.equal(t.round, 1);
+});
+
 test("first player is the owner and only the owner sets the buy-in", () => {
   const t = G.newTable("X");
   G.seatPlayer(t, G.newPlayer("a", "Alice", $(50)));
@@ -70,6 +97,7 @@ test("first player is the owner and only the owner sets the buy-in", () => {
   assert.equal(t.buyIn, $(20));
   G.seatPlayer(t, G.newPlayer("b", "Bob", t.buyIn));
   assert.equal(G.stackValue(t.players[1].rack), $(20));
+  G.setBuyIn(t, 0, $(25));                      // allowed during the roll-off too
   assert.throws(() => G.setBuyIn(t, 1, $(10)), /owner/);
   assert.throws(() => G.setBuyIn(t, 0, 125), /50¢/);
   assert.throws(() => G.setBuyIn(t, 0, 10), /between/);
@@ -131,9 +159,33 @@ test("matchBet picks exact chips, or has the dealer make change", () => {
   G.matchBet(t, 0);
   assert.equal(G.stackValue(t.players[0].bet), 350);
   assert.equal(G.stackValue(t.players[0].rack), 2000 - 350);
-  // Can't match more than you have.
+  // Can't cover it: Alice goes all in and Bob's bet is trimmed to match.
+  t.players[0].rack = { 1000: 1, 500: 0, 300: 0, 100: 0, 50: 0 };
+  t.players[0].bet = G.emptyStack();
   t.players[1].bet = { 1000: 3, 500: 0, 300: 0, 100: 0, 50: 0 };
-  assert.throws(() => G.matchBet(t, 0), /only have/);
+  t.players[1].rack = { 1000: 2, 500: 0, 300: 0, 100: 0, 50: 0 };
+  t.players[1].ready = true;
+  G.matchBet(t, 0);
+  assert.equal(G.stackValue(t.players[0].bet), 1000);
+  assert.equal(G.stackValue(t.players[0].rack), 0);
+  assert.equal(G.stackValue(t.players[1].bet), 1000);
+  assert.equal(G.stackValue(t.players[1].rack), 4000);
+  assert.equal(t.phase, G.PHASES.COMEOUT);
+});
+
+test("all in pushes every chip up and counts as I'm in", () => {
+  const t = seated($(20));
+  G.allIn(t, 0);
+  assert.equal(G.stackValue(t.players[0].bet), $(20));
+  assert.equal(G.stackValue(t.players[0].rack), 0);
+  assert.equal(t.players[0].ready, true);
+  assert.equal(t.phase, G.PHASES.BETTING);
+  G.matchBet(t, 1);                      // Bob covers it -> live
+  assert.equal(t.phase, G.PHASES.COMEOUT);
+  assert.equal(G.potValue(t), $(40));
+  G.roll(t, 0, diceRng([1, 1]));         // craps: Bob takes everything
+  assert.equal(t.players[0].bankroll ?? G.stackValue(t.players[0].rack), 0);
+  assert.throws(() => G.allIn(t, 0), /closed/);
 });
 
 test("winner takes every chip on the table and stats update", () => {
@@ -189,11 +241,13 @@ test("exchange with the dealer must balance and come from your rack", () => {
   assert.throws(() => G.exchange(t, 0, {}, {}), /Choose chips/);
 });
 
-test("rebuy adds another buy-in at the table's current amount", () => {
+test("rebuy is only allowed at $0 and adds the table's current buy-in", () => {
   const t = seated($(20));
   G.setBuyIn(t, 0, $(30));
+  assert.throws(() => G.rebuy(t, 1), /out of chips/);
+  t.players[1].rack = G.emptyStack();
   G.rebuy(t, 1);
-  assert.equal(G.stackValue(t.players[1].rack), $(50));
+  assert.equal(G.stackValue(t.players[1].rack), $(30));
   assert.equal(t.players[1].boughtIn, $(50));
 });
 
@@ -205,6 +259,8 @@ test("a player leaving mid-round returns bets and hands ownership over", () => {
   assert.equal(t.players.length, 1);
   assert.equal(G.stackValue(t.players[0].rack), $(50));
   assert.equal(t.ownerId, "b");
+  G.seatPlayer(t, G.newPlayer("c", "Carol", $(50)));
+  assert.equal(t.phase, G.PHASES.ROLLOFF);     // a new opponent means a new roll-off
 });
 
 test("real rng produces only valid dice", () => {
