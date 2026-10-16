@@ -260,7 +260,7 @@
 <div class="modal" id="xmodal">
   <div class="sheet">
     <h2>Exchange with the dealer</h2>
-    <div class="hint">Hand in chips from your rack and take back the same value in other chips.</div>
+    <div class="hint">Pick the chips you're handing in, then take back the same value in other chips. You can't take more than you give.</div>
     <h3 style="margin:14px 0 0;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">You give</h3>
     <div class="xrow" id="xgive"></div>
     <h3 style="margin:14px 0 0;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">You get</h3>
@@ -424,7 +424,12 @@
   document.addEventListener("pointercancel", stopHold);
   window.addEventListener("blur", stopHold);
 
-  function xLimit(obj, d) { return obj === xgive ? (state.players[mySeat].rack[d] || 0) : 9999; }
+  // Give is capped by your rack; get is capped by the value you're giving.
+  function xLimit(obj, d) {
+    if (obj === xgive) return state.players[mySeat].rack[d] || 0;
+    const room = value(xgive) - value(xget) + xget[d] * d;
+    return Math.max(0, Math.floor(room / d));
+  }
   function bump(obj, d, delta) {
     const next = Math.max(0, Math.min(xLimit(obj, d), obj[d] + delta));
     if (next === obj[d]) { stopHold(); return; } // hit the floor/ceiling: no point repeating
@@ -454,8 +459,11 @@
   function updateX() {
     if (!state || mySeat < 0) return;
     const rack = state.players[mySeat].rack;
+    for (const d of DENOMS) xgive[d] = Math.min(xgive[d], rack[d] || 0); // rack may have changed under us
+    // If the give side shrank, trim the get side (smallest chips first) so it never exceeds it.
+    for (const d of [...DENOMS].reverse()) while (value(xget) > value(xgive) && xget[d] > 0) xget[d]--;
+    const remaining = value(xgive) - value(xget);
     for (const d of DENOMS) {
-      xgive[d] = Math.min(xgive[d], rack[d] || 0); // rack may have changed under us
       const g = $("xgive").querySelector(`.xcell[data-d="${d}"]`), r = $("xget").querySelector(`.xcell[data-d="${d}"]`);
       if (!g || !r) return;
       g.querySelector(".have b").textContent = rack[d] || 0;
@@ -467,11 +475,13 @@
       g.querySelector('[data-step="-5"]').disabled = xgive[d] === 0;
       r.querySelector('[data-step="-1"]').disabled = xget[d] === 0;
       r.querySelector('[data-step="-5"]').disabled = xget[d] === 0;
+      r.querySelector('[data-step="1"]').disabled = remaining < d;
+      r.querySelector('[data-step="5"]').disabled = remaining < d;
     }
     const gv = value(xgive), rv = value(xget);
     $("xgiveTotal").textContent = fmt(gv); $("xgetTotal").textContent = fmt(rv);
     const ok = gv > 0 && gv === rv;
-    $("xstatus").textContent = ok ? "✔ balanced" : gv && rv ? `off by ${fmt(Math.abs(gv - rv))}` : "";
+    $("xstatus").textContent = ok ? "✔ balanced" : gv === 0 ? "pick chips to give first" : `${fmt(gv - rv)} left to take`;
     $("xstatus").className = ok ? "ok" : "bad";
     $("xconfirm").disabled = !ok;
   }
