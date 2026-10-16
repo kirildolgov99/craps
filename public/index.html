@@ -149,8 +149,11 @@
   .xcell { background: rgba(0,0,0,.3); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .xcell .have { font-size: .7rem; color: var(--muted); }
   .xcell .pm { display: flex; align-items: center; gap: 4px; }
-  .xcell .pm button { padding: 0; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 1rem; line-height: 1; }
-  .xcell .pm span { min-width: 20px; text-align: center; font-weight: 800; }
+  .xcell .pm button { padding: 0; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 1rem; line-height: 1; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .xcell .pm span { min-width: 22px; text-align: center; font-weight: 800; }
+  .xcell .pm5 { display: flex; gap: 4px; }
+  .xcell .pm5 button { padding: 0; width: 34px; height: 22px; border-radius: 6px; background: rgba(255,255,255,.1); color: var(--muted); font-size: .7rem; font-weight: 800; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .xcell button:active { background: rgba(230,184,76,.5); color: var(--ink); }
   .xtotals { display: flex; justify-content: space-between; margin-top: 12px; font-weight: 700; }
   .xtotals .bad { color: var(--red); } .xtotals .ok { color: var(--green); }
 
@@ -401,29 +404,74 @@
 
   // ---------- exchange modal ----------
   const xgive = {}, xget = {};
-  $("exchangeBtn").onclick = () => { for (const d of DENOMS) { xgive[d] = 0; xget[d] = 0; } renderX(); $("xmodal").classList.add("open"); };
-  $("xcancel").onclick = () => $("xmodal").classList.remove("open");
-  $("xmodal").addEventListener("click", (e) => { if (e.target === $("xmodal")) $("xmodal").classList.remove("open"); });
-  $("xconfirm").onclick = () => { send({ type: "exchange", give: xgive, receive: xget }); $("xmodal").classList.remove("open"); };
-  function renderX() {
-    const rack = state.players[mySeat].rack;
-    const row = (el, obj, limits) => {
+  let xHold = null;
+  $("exchangeBtn").onclick = () => { for (const d of DENOMS) { xgive[d] = 0; xget[d] = 0; } buildX(); $("xmodal").classList.add("open"); };
+  const closeX = () => { stopHold(); $("xmodal").classList.remove("open"); };
+  $("xcancel").onclick = closeX;
+  $("xmodal").addEventListener("click", (e) => { if (e.target === $("xmodal")) closeX(); });
+  $("xconfirm").onclick = () => { send({ type: "exchange", give: xgive, receive: xget }); closeX(); };
+
+  // Press-and-hold: fires once right away, then repeats, speeding up the longer you hold.
+  function startHold(fn) {
+    stopHold();
+    fn();
+    let delay = 170;
+    const tick = () => { fn(); delay = Math.max(30, delay * 0.82); xHold = setTimeout(tick, delay); };
+    xHold = setTimeout(tick, 380);
+  }
+  function stopHold() { if (xHold) { clearTimeout(xHold); xHold = null; } }
+  document.addEventListener("pointerup", stopHold);
+  document.addEventListener("pointercancel", stopHold);
+  window.addEventListener("blur", stopHold);
+
+  function xLimit(obj, d) { return obj === xgive ? (state.players[mySeat].rack[d] || 0) : 9999; }
+  function bump(obj, d, delta) {
+    const next = Math.max(0, Math.min(xLimit(obj, d), obj[d] + delta));
+    if (next === obj[d]) { stopHold(); return; } // hit the floor/ceiling: no point repeating
+    obj[d] = next;
+    updateX();
+  }
+  function buildX() {
+    const row = (el, obj, limited) => {
       el.innerHTML = "";
       for (const d of DENOMS) {
-        const cell = document.createElement("div"); cell.className = "xcell";
-        cell.innerHTML = `${chipHtml(d, "sm")}<div class="have">${limits ? "have " + (rack[d] || 0) : "&nbsp;"}</div><div class="pm"><button data-d="${d}" data-k="-">−</button><span>${obj[d]}</span><button data-d="${d}" data-k="+">+</button></div>`;
-        cell.querySelectorAll("button").forEach((b) => b.onclick = () => {
-          const dd = Number(b.dataset.d), max = limits ? (rack[dd] || 0) : 999;
-          obj[dd] = Math.max(0, Math.min(max, obj[dd] + (b.dataset.k === "+" ? 1 : -1))); renderX();
+        const cell = document.createElement("div"); cell.className = "xcell"; cell.dataset.d = d;
+        cell.innerHTML = `${chipHtml(d, "sm")}<div class="have">${limited ? "have <b></b>" : "&nbsp;"}</div>
+          <div class="pm"><button data-step="-1" aria-label="remove one">−</button><span class="n">0</span><button data-step="1" aria-label="add one">+</button></div>
+          <div class="pm5"><button data-step="-5">−5</button><button data-step="5">+5</button></div>`;
+        cell.querySelectorAll("button").forEach((btn) => {
+          const step = Number(btn.dataset.step);
+          btn.addEventListener("pointerdown", (e) => { e.preventDefault(); btn.setPointerCapture?.(e.pointerId); startHold(() => bump(obj, d, step)); });
+          btn.addEventListener("contextmenu", (e) => e.preventDefault()); // long-press on phones
+          btn.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); bump(obj, d, step); } });
         });
         el.appendChild(cell);
       }
     };
     row($("xgive"), xgive, true); row($("xget"), xget, false);
-    const g = value(xgive), r = value(xget);
-    $("xgiveTotal").textContent = fmt(g); $("xgetTotal").textContent = fmt(r);
-    const ok = g > 0 && g === r;
-    $("xstatus").textContent = ok ? "✔ balanced" : g && r ? `off by ${fmt(Math.abs(g - r))}` : "";
+    updateX();
+  }
+  function updateX() {
+    if (!state || mySeat < 0) return;
+    const rack = state.players[mySeat].rack;
+    for (const d of DENOMS) {
+      xgive[d] = Math.min(xgive[d], rack[d] || 0); // rack may have changed under us
+      const g = $("xgive").querySelector(`.xcell[data-d="${d}"]`), r = $("xget").querySelector(`.xcell[data-d="${d}"]`);
+      if (!g || !r) return;
+      g.querySelector(".have b").textContent = rack[d] || 0;
+      g.querySelector(".n").textContent = xgive[d];
+      r.querySelector(".n").textContent = xget[d];
+      g.querySelector('[data-step="1"]').disabled = xgive[d] >= (rack[d] || 0);
+      g.querySelector('[data-step="5"]').disabled = xgive[d] >= (rack[d] || 0);
+      g.querySelector('[data-step="-1"]').disabled = xgive[d] === 0;
+      g.querySelector('[data-step="-5"]').disabled = xgive[d] === 0;
+      r.querySelector('[data-step="-1"]').disabled = xget[d] === 0;
+      r.querySelector('[data-step="-5"]').disabled = xget[d] === 0;
+    }
+    const gv = value(xgive), rv = value(xget);
+    $("xgiveTotal").textContent = fmt(gv); $("xgetTotal").textContent = fmt(rv);
+    const ok = gv > 0 && gv === rv;
+    $("xstatus").textContent = ok ? "✔ balanced" : gv && rv ? `off by ${fmt(Math.abs(gv - rv))}` : "";
     $("xstatus").className = ok ? "ok" : "bad";
     $("xconfirm").disabled = !ok;
   }
@@ -621,7 +669,7 @@
       else if (t.phase === "point") hint = isShooter ? `Roll a ${t.point} to win. A 7 loses.` : `You win if a 7 comes before another ${t.point}.`;
       else if (t.phase === "result") hint = "Either player can start the next round. The dice pass to the other player.";
       $("hint").innerHTML = hint;
-      if ($("xmodal").classList.contains("open")) renderX();
+      if ($("xmodal").classList.contains("open")) updateX();
     }
 
     const lg = $("log");
